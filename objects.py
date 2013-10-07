@@ -23,10 +23,10 @@ RESLIST = ['H+', 'NaCl', 'CO2', 'O2', 'Glc', 'Fru', 'Lac', 'AAs', 'N', 'P', 'EtO
 # All values are in mol/L and are based on the following research article:
 # http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2754216/
 CELLR = {'H+':  {'current': 10**-7.5,
-                 'minLive': 10**-7.0,
-                 'minGrow': 10**-7.2,
-                 'maxGrow': 10**-7.8,
-                 'maxLive': 10**-8.0},
+                 'minLive': 10**-8.0,
+                 'minGrow': 10**-7.8,
+                 'maxGrow': 10**-7.2,
+                 'maxLive': 10**-7.0},
          'NaCl':{'current': 5*10**-3,
                  'minLive': 10**-3,
                  'minGrow': 3*10**-3,
@@ -139,9 +139,20 @@ class Organism:
         for key in self.res:
             print key + ":\t" + str(self.res[key]['current'])
 
+    def print_channels(self):
+        print "Res\tOpen?\t[Res]"
+        for op in self.ops:
+            if op.trans:
+                print op.trans + "\t" + str(op.on) + "\t" + str(self.res[op.trans]['current'])
+
+
     # Returns the current total volume of the population.
     def vol(self):
         return self.cVol * self.count
+
+    # Returns the current concentration of ATP, as this is often needed.
+    def atp(self):
+        return self.res['ATP']['current']
 
     # Takes a resource string (like 'H+') and returns True if it can currently
     # undergo passive transport into or out of the organism.
@@ -165,6 +176,44 @@ class Organism:
         for op in self.ops:
             if (op.trans == r) and (not op.atpReq):
                 op.turnOn()
+
+    # Returns True if that resource concentration is not lethal to the organism.
+    def isLivable(self, r, conc):
+        return self.res[r]['minLive'] <= conc <= self.res[r]['maxLive']
+
+    # Returns True if the resource concentration does not limit growth.
+    def isIdeal(self, r, conc):
+        return self.res[r]['minGrow'] <= conc <= self.res[r]['maxGrow']
+
+    # Takes an environmental resource dictionary and closes/opens channels
+    # according concentrations and cellular needs.
+    def setChannels(self, envRes):
+        for op in self.ops:
+            # Checks that the operon is for a passive transporter.
+            if op.trans and not op.atpReq:
+                r = op.trans                     # Shorthand for the resource.
+                current = self.res[r]['current'] # Shorthand for the current internal conc of r.
+
+                # Check if the cell is dying due to the resource.
+                if not self.isLivable(r, current):
+                    # Open the channel if the environment is better, otherwise close it.
+                    if self.isLivable(r, envRes[r]):
+                        self.open(r)
+                    else:
+                        self.close(r)
+
+                # Also check if the cell isn't dying OR growing.
+                elif not self.isIdeal(r, current):
+                    # Again, open if the env is better.
+                    if self.isIdeal(r, envRes[r]):
+                        self.open(r)
+                    else:
+                        self.close(r)
+
+                # If intracellular levels are ideal, then close the channels.
+                else:
+                    self.close(r)
+
 
     # Returns a dictionary of the resources available for pooling (i.e. with
     # open channels), with the value being a tuple of the moles and volume.
@@ -239,6 +288,8 @@ class Ecosystem:
         self.env = env
 
     def equalize(self):
+        for org in self.orgs:
+            org.setChannels(self.env.res)
         newRes = [org.resAvailable() for org in self.orgs]
         for r in self.env.res:
             self.env.res[r] = ((sum([o[r][0] for o in newRes]) + 
@@ -262,14 +313,3 @@ operons = [Operon('CO2 Diffusion', 0, 0, 'CO2'),
 # Default organisms
 eColi = Organism('E. coli', dict(zip(operons, [1 for op in operons])), CELLR)
 cDiff = Organism('C. diff', dict(zip(operons, [1 for op in operons])), CELLR)
-print 'Before:'
-eColi.print_res()
-#print 'cDiff'
-#cDiff.print_res()
-env = Environment('Lab', 1, ENVR, 37, True)
-comm = Ecosystem([eColi,cDiff], env)
-comm.equalize()
-print 'After:'
-eColi.print_res()
-#print 'cDiff'
-#cDiff.print_res()

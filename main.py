@@ -6,10 +6,10 @@ from pygame.locals import *
 import objects
 
 eColi = objects.eColi
-
-print str(eColi)
-print "Count\tVolume"
-while eColi.conc['atp'] > 10:
-    print str(eColi.count) + "\t" + str(eColi.volume())
-    eColi.count = eColi.count * 2
-    eColi.conc['atp'] = eColi.conc['atp']/2
+print 'Before:'
+eColi.print_channels()
+env = objects.Environment('Lab', 1, objects.ENVR, 37, True)
+comm = objects.Ecosystem([eColi], env)
+comm.equalize()
+print '\nAfter:'
+eColi.print_channels()
