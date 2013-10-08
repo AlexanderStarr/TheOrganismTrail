@@ -17,3 +17,4 @@ print '\nAfter:\nE.coli'
 eColi.print_channels()
 print '\nEnv'
 comm.env.print_res()
+print comm.tracker

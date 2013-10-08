@@ -312,10 +312,13 @@ class Ecosystem:
     def __init__(self, orgs, env):
         self.orgs = orgs
         self.env = env
+        self.tracker = dict(zip(orgs, [[] for org in orgs]))  # To track populations
 
     def equalize(self):
+        light = self.env.res['Lux']
         for org in self.orgs:
             org.setChannels(self.env.res)
+            self.tracker[org].append(org.count)
         newRes = [org.resAvailable() for org in self.orgs]
         for r in self.env.res:
             self.env.res[r] = ((sum([o[r][0] for o in newRes]) + 
@@ -323,6 +326,7 @@ class Ecosystem:
                                (sum([o[r][1] for o in newRes]) + self.env.vol))
         for org in self.orgs:
             org.setRes(self.env.res)
+        self.env.res['Lux'] = light # Light resets, or can change according to some function
 
 
 
