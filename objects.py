@@ -1,28 +1,33 @@
 import random
 
-# A starter environmental concentrations dictionary.
-# Based on the standard LB medium.
+# A starter environmental resources dictionary.
+# All values are mol/L, except Temp and Lux, which are in Kelvin and Lux.
+# Based on standard LB medium and standard growth conditions.
 # http://en.wikipedia.org/wiki/Lysogeny_broth
-ENVR = {'H+': 10**-7.4,
-        'NaCl': 3.3*10**-3,
-        'CO2': 0,
-        'O2': 0,
-        'Glc': 3*10**-3,
-        'Fru': 0,
-        'Lac': 0,
-        'AAs': 9.6*10**-2,
-        'N': 0,
-        'P': 0,
-        'EtOH': 0}
+ENVR = {'H+'  : 10**-7.4,
+        'K+'  : 3.3*10**-3, # Not right
+        'Na+' : 3.3*10**-3,
+        'Cl-' : 3.3*10**-3, # Not right
+        'CO2' : 0.0,
+        'O2'  : 0.0,
+        'Glc' : 3*10**-3,
+        'Fru' : 0.0,
+        'Lac' : 0.0,
+        'AAs' : 9.6*10**-2,
+        'N'   : 0.0,
+        'P'   : 0.0,
+        'EtOH': 0,
+        'Temp': 310.0,
+        'Lux' : 1000.0}
 
 RESLIST = ['H+', 'NaCl', 'CO2', 'O2', 'Glc', 'Fru', 'Lac', 'AAs', 'N', 'P', 'EtOH']
 
 # A starter internal cellular concentrations dictionary.
-# Based on E. coli.
+# Based on Escherichia coli.
 # Each resource has a dictionary containing min/max/current values.
 # All values are in mol/L and are based on the following research article:
 # http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2754216/
-CELLR = {'H+':  {'current': 10**-7.5,
+CELLR = {'H+':  {'current': 10**-7.4,
                  'minLive': 10**-8.0,
                  'minGrow': 10**-7.8,
                  'maxGrow': 10**-7.2,
@@ -37,29 +42,29 @@ CELLR = {'H+':  {'current': 10**-7.5,
                  'minGrow': 2*10**-3,
                  'maxGrow': 10**-2,
                  'maxLive': 2*10**-2},
-         'CO2': {'current': 0,
-                 'minLive': 0,
-                 'minGrow': 0,
+         'CO2': {'current': 0.0,
+                 'minLive': 0.0,
+                 'minGrow': 0.0,
                  'maxGrow': 10**-3,
                  'maxLive': 10**-2},
-         'O2':  {'current': 0,
-                 'minLive': 0,
-                 'minGrow': 0,
+         'O2':  {'current': 0.0,
+                 'minLive': 0.0,
+                 'minGrow': 0.0,
                  'maxGrow': 10**-3,
                  'maxLive': 10**-2},
          'Glc': {'current': 8*10**-3,
-                 'minLive': 0,
+                 'minLive': 0.0,
                  'minGrow': 10**-3,
                  'maxGrow': 10**-2,
                  'maxLive': 2*10**-2},
-         'Fru': {'current': 0,
-                 'minLive': 0,
-                 'minGrow': 0,
+         'Fru': {'current': 0.0,
+                 'minLive': 0.0,
+                 'minGrow': 0.0,
                  'maxGrow': 10**-2,
                  'maxLive': 2*10**-2},
-         'Lac': {'current': 0,
-                 'minLive': 0,
-                 'minGrow': 0,
+         'Lac': {'current': 0.0,
+                 'minLive': 0.0,
+                 'minGrow': 0.0,
                  'maxGrow': 10**-2,
                  'maxLive': 2*10**-2},
          'AAs': {'current': 1.5*10**-1,
@@ -67,21 +72,31 @@ CELLR = {'H+':  {'current': 10**-7.5,
                  'minGrow': 10**-1,
                  'maxGrow': 2*10**-1,
                  'maxLive': 3*10**-1},
-         'N':   {'current': 0,
-                 'minLive': 0,
-                 'minGrow': 0,
+         'N':   {'current': 0.0,
+                 'minLive': 0.0,
+                 'minGrow': 0.0,
                  'maxGrow': 10**-2,
                  'maxLive': 10**-1},
-         'P':   {'current': 0,
-                 'minLive': 0,
-                 'minGrow': 0,
+         'P':   {'current': 0.0,
+                 'minLive': 0.0,
+                 'minGrow': 0.0,
                  'maxGrow': 10**-2,
                  'maxLive': 10**-1},
-         'EtOH':{'current': 0,
-                 'minLive': 0,
-                 'minGrow': 0,
-                 'maxGrow': 1.09,   # These correspond to ~6% and ~10% ABV
-                 'maxLive': 1.71}}
+         'EtOH':{'current': 0.0,
+                 'minLive': 0.0,
+                 'minGrow': 0.0,
+                 'maxGrow': 1.09,   # These correspond to ~6%...
+                 'maxLive': 1.71},  # ...and ~10% ABV
+         'Temp':{'current': 310,
+                 'minLive': 273,
+                 'minGrow': 281,
+                 'maxGrow': 318,
+                 'maxLive': 344},
+         'Lux' :{'current': 0.0,
+                 'minLive': 0.0,
+                 'minGrow': 0.0,
+                 'maxGrow': 10**5,
+                 'maxLive': 1.7*10**5}}
 
 # Some resources diffuse freely across membranes.
 DIFFUSES = ['CO2', 'O2', 'EtOH']
@@ -121,7 +136,7 @@ class Operon:
 class Organism:
     """Represents organism populations"""
 
-    def __init__(self, name, ops, res, count=100, cVol=6*10**-13):
+    def __init__(self, name, ops, res, count=100, cVol=6.5*10**-16):
         self.name = name
         self.count = count
         self.cVol = cVol
@@ -214,7 +229,6 @@ class Organism:
                 else:
                     self.close(r)
 
-
     # Returns a dictionary of the resources available for pooling (i.e. with
     # open channels), with the value being a tuple of the moles and volume.
     def resAvailable(self):
@@ -237,18 +251,16 @@ class Organism:
     # Organisms will try to adjust their internal resources within minGrow and
     # maxGrow for that resource, but are limited by concentrations and genes.
     def exchange(self, envRes):
-        return envRes
+        
 
 
 class Environment:
     """Represents a microbiological environment"""
 
-    def __init__(self, name, vol, res, temp, light):
+    def __init__(self, name, vol, res):
         self.name = name
         self.vol = vol
         self.res = res
-        self.temp = temp
-        self.light = light
 
     def __str__(self):
         return self.name
@@ -301,11 +313,12 @@ class Ecosystem:
 
 
 # Define all the operons.
-# Some of these are non-existant, particularly the diffusion ones.
-# They simplify calculations, and act as no-sized, non-ATP-consuming transporters.
+# The diffusion and irradiance operons don't actually exist.
+# They simplify the code and act as no-sized, non-ATP-consuming transporters.
 operons = [Operon('CO2 Diffusion', 0, 0, 'CO2'),
            Operon('O2 Diffusion', 0, 0, 'O2'),
            Operon('EtOH Diffusion', 0, 0, 'EtOH'),
+           Operon('Irradiation', 0, 0, 'Lux'),
            Operon('Amino acid transporters', 500, 0, 'AAs'),
            Operon('Glucose transporter', 500, 0, 'Glc'),
            Operon('NaCl channel', 500, 0, 'NaCl')]
