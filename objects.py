@@ -5,22 +5,22 @@ import random
 # Based on standard LB medium and standard growth conditions.
 # http://en.wikipedia.org/wiki/Lysogeny_broth
 ENVR = {'H+'  : 10**-7.4,
-        'K+'  : 3.3*10**-3, # Not right
-        'Na+' : 3.3*10**-3,
-        'Cl-' : 3.3*10**-3, # Not right
+        'K+'  : 3.3*10**-3,
+        'Na+' : 1.8*10**-1,
+        'Cl-' : 1.8*10**-1,
         'CO2' : 0.0,
         'O2'  : 0.0,
-        'Glc' : 3*10**-3,
+        'Glc' : 3.3*10**-3,
         'Fru' : 0.0,
         'Lac' : 0.0,
-        'AAs' : 9.6*10**-2,
+        'AAs' : 9.7*10**-2,
         'N'   : 0.0,
         'P'   : 0.0,
-        'EtOH': 0,
+        'EtOH': 0.0,
         'Temp': 310.0,
         'Lux' : 1000.0}
 
-RESLIST = ['H+', 'NaCl', 'CO2', 'O2', 'Glc', 'Fru', 'Lac', 'AAs', 'N', 'P', 'EtOH']
+RESLIST = ENVR.keys()
 
 # A starter internal cellular concentrations dictionary.
 # Based on Escherichia coli.
@@ -32,10 +32,20 @@ CELLR = {'H+':  {'current': 10**-7.4,
                  'minGrow': 10**-7.8,
                  'maxGrow': 10**-7.2,
                  'maxLive': 10**-7.0},
-         'NaCl':{'current': 5*10**-3,
+         'K+':  {'current': 2.1*10**-1,
+                 'minLive': 10**-1,
+                 'minGrow': 1.5*10**-1,
+                 'maxGrow': 2.5*10**-1,
+                 'maxLive': 3*10**-1},
+         'Na+': {'current': 5*10**-3,
                  'minLive': 10**-3,
                  'minGrow': 3*10**-3,
-                 'maxGrow': 10**-2,
+                 'maxGrow': 1.4*10**-2,
+                 'maxLive': 2*10**-2},
+         'Cl-': {'current': 5*10**-3,
+                 'minLive': 10**-3,
+                 'minGrow': 3*10**-3,
+                 'maxGrow': 1.4*10**-2,
                  'maxLive': 2*10**-2},
          'ATP': {'current': 8*10**-3,
                  'minLive': 5*10**-4,
@@ -87,11 +97,11 @@ CELLR = {'H+':  {'current': 10**-7.4,
                  'minGrow': 0.0,
                  'maxGrow': 1.09,   # These correspond to ~6%...
                  'maxLive': 1.71},  # ...and ~10% ABV
-         'Temp':{'current': 310,
-                 'minLive': 273,
-                 'minGrow': 281,
-                 'maxGrow': 318,
-                 'maxLive': 344},
+         'Temp':{'current': 310.0,
+                 'minLive': 273.0,
+                 'minGrow': 281.0,
+                 'maxGrow': 318.0,
+                 'maxLive': 344.0},
          'Lux' :{'current': 0.0,
                  'minLive': 0.0,
                  'minGrow': 0.0,
@@ -99,7 +109,7 @@ CELLR = {'H+':  {'current': 10**-7.4,
                  'maxLive': 1.7*10**5}}
 
 # Some resources diffuse freely across membranes.
-DIFFUSES = ['CO2', 'O2', 'EtOH']
+DIFFUSES = ['CO2', 'O2', 'EtOH', 'Lux', 'Temp']
 
 
 class Operon:
@@ -251,7 +261,7 @@ class Organism:
     # Organisms will try to adjust their internal resources within minGrow and
     # maxGrow for that resource, but are limited by concentrations and genes.
     def exchange(self, envRes):
-        
+        return envRes
 
 
 class Environment:
@@ -267,6 +277,10 @@ class Environment:
 
     def __repr__(self):
         return self.name
+
+    def print_res(self):
+        for key in self.res:
+            print key + ":\t\t" + str(self.res[key])
 
     # Returns a list of dictionaries, one for each organism in the community.
     # Each dictionary contains the moles of resources available to that organism
@@ -321,7 +335,9 @@ operons = [Operon('CO2 Diffusion', 0, 0, 'CO2'),
            Operon('Irradiation', 0, 0, 'Lux'),
            Operon('Amino acid transporters', 500, 0, 'AAs'),
            Operon('Glucose transporter', 500, 0, 'Glc'),
-           Operon('NaCl channel', 500, 0, 'NaCl')]
+           Operon('Na+ channel', 500, 0, 'Na+'),
+           Operon('K+ channel', 500, 0, 'K+'),
+           Operon('Cl- channel', 500, 0, 'Cl-')]
 
 # Default organisms
 eColi = Organism('E. coli', dict(zip(operons, [1 for op in operons])), CELLR)
