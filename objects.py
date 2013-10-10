@@ -52,6 +52,11 @@ CELLR = {'H+':  {'current': 10**-7.4,
                  'minGrow': 2*10**-3,
                  'maxGrow': 10**-2,
                  'maxLive': 2*10**-2},
+         'ADP': {'current': 0.0,
+                 'minLive': 0.0,
+                 'minGrow': 0.0,
+                 'maxGrow': 10**-1,
+                 'maxLive': 2*10**-1},
          'CO2': {'current': 0.0,
                  'minLive': 0.0,
                  'minGrow': 0.0,
@@ -62,7 +67,7 @@ CELLR = {'H+':  {'current': 10**-7.4,
                  'minGrow': 0.0,
                  'maxGrow': 10**-3,
                  'maxLive': 10**-2},
-         'Glc': {'current': 8*10**-3,
+         'Glc': {'current': 0.0,#8*10**-3,
                  'minLive': 0.0,
                  'minGrow': 10**-3,
                  'maxGrow': 10**-2,
@@ -239,9 +244,19 @@ class Organism:
     def vol(self):
         return self.cVol * self.count
 
-    # Returns the current concentration of ATP, as this is often needed.
+    # Returns the current number of moles of ATP, as this is often needed.
     def atp(self):
-        return self.res['ATP']['current']
+        return self.res['ATP']['current'] * self.vol()
+
+        # Adds the given number of moles (+ or -) to the current pool of resource r.
+    def addRes(self, r, moles):
+        self.res[r]['current'] = (self.res[r]['current'] * self.vol() + moles) / self.vol()
+
+    # Hydrolyzes the given moles of ATP, converting it to ADP.
+    def useATP(self, moles):
+        self.addRes('ATP', -moles)
+        self.addRes('ADP', moles)
+        self.addRes('P', moles)
 
     # Takes a resource string (like 'H+') and returns True if it can currently
     # undergo passive transport into or out of the organism.
@@ -273,6 +288,20 @@ class Organism:
     # Returns True if the resource concentration does not limit growth.
     def isIdeal(self, r, conc):
         return self.res[r]['minGrow'] <= conc <= self.res[r]['maxGrow']
+
+    # Finds the number of moles required (positive or negative) to reach growth
+    # range for the resource r.
+    def molsReq(self, r):
+        cur = self.res[r]['current']
+        minG = self.res[r]['minGrow']
+        maxG = self.res[r]['maxGrow']
+        if cur < minG:
+            return (minG - cur) * self.vol()
+        elif cur > maxG:
+            return (maxG - cur) * self.vol()
+        # Need 0 moles if already within range.
+        else:
+            return 0
 
     # Takes an environmental resource dictionary and closes/opens passive
     # channels according concentrations and cellular needs.
@@ -316,14 +345,23 @@ class Organism:
             if self.canPass(res):
                 self.res[res]['current'] = envRes[res]
 
-
-    # Adds/removes resources from both the cell and the "checked out"
-    # environmental resources dictionary.  Then returns the updated dictionary.
-    # Organisms will try to adjust their internal resources within minGrow and
-    # maxGrow for that resource, but are limited by concentrations and genes.
+    # Checks all active transport operons, and if they should be used.
     def exchange(self, envRes):
-        for res in self.res:
-            print res
+        for op in self.genes.funcs['act']:
+            r = op.eff
+            molesNeeded = self.molsReq(r)
+            if molesNeeded:
+                atpNeeded = molesNeeded * op.atpReq
+                if atpNeeded < self.atp():
+                    self.useATP(atpNeeded)
+                    self.addRes(r, molesNeeded)
+                    envRes[r] = envRes[r] - molesNeeded
+                else:
+                    atpLeft = self.atp() - (self.res['ATP']['minLive'] * self.vol())
+                    molesPossible = atpLeft / op.atpReq
+                    self.useATP(atpLeft)
+                    self.addRes(r, molesPossible)
+                    envRes[r] = envRes[r] - molesPossible
         return envRes
 
 
@@ -357,11 +395,10 @@ class Environment:
 
         # Then build a dictionary for each organism, giving it resources
         # proportional to its fractional volume.
-        # Environmental concentrations are included to figure out diffusion.
         resources = [{} for org in proportions]
         for i in range(len(resources)):
             for key in self.res:
-                resources[i][key] = (self.res[key] * self.vol * proportions[i], self.res[key])
+                resources[i][key] = (self.res[key] * self.vol * proportions[i])
         return resources
 
     # Updates the environmental resources
@@ -401,7 +438,7 @@ operons = [Operon('CO2 Diffusion', 0, 'pas', 'CO2'),
            Operon('EtOH Diffusion', 0, 'pas', 'EtOH'),
            Operon('Irradiation', 0, 'pas', 'Lux'),
            Operon('Amino acid transporters', 500, 'pas', 'AAs'),
-           Operon('Glucose transporter', 500, 'pas', 'Glc'),
+           Operon('Glucose transporter', 500, 'act', 'Glc', 1),
            Operon('Na+ channel', 500, 'pas', 'Na+'),
            Operon('K+ channel', 500, 'pas', 'K+'),
            Operon('Cl- channel', 500, 'pas', 'Cl-')]
