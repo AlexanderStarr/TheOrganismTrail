@@ -168,13 +168,14 @@ class Operon:
     def __init__(self, name, size, function, effect, energyRequired=0, rate=None):
         self.name = name
         self.size = size
-        self.func = function
+        if function not in OPTYPES:
+            raise ValueError("Function must be 'pas', 'act', 'mod', or 'rxn'.")
+        else:
+            self.func = function
+        self.eff = effect
         self.rate = rate
         self.atpReq = energyRequired
         self.on = True
-
-        if self.func not in OPTYPES:
-            raise ValueError("Function must be 'pas', 'act', 'mod', or 'rxn'.")
 
     def __str__(self):
         return self.name
@@ -184,17 +185,11 @@ class Operon:
 
     # Turns the operon off if it is capable of doing so.
     def turnOff(self):
-        if self.trans not in DIFFUSES:
+        if self.eff not in DIFFUSES:
             self.on = False
 
     def turnOn(self):
         self.on = True
-
-    def canPassTrans(self, r=False):
-        if r:
-            return (not self.atpReq) and (self.trans == r) and (self.on)
-        else:
-            return (not self.atpReq) and (self.on)
 
 
 class Genome:
@@ -204,30 +199,26 @@ class Genome:
         # operons should be a list.  Initializing a genome then compiles info
         # about operons to save calculations down the road.
         self.size = 0
-        self.type = {'pas': [], 'act': [], 'con': [], 'mod': []}
+        self.funcs = {'pas': [], 'act': [], 'con': [], 'mod': []}
         for op in operons:
-            if op.trans and not op.atpReq:
-                self.type['pas'].append(op)
-            elif op.trans and op.atpReq:
-                self.type['act'].append(op)
-            elif op.con:
-                self.type['rxn'].append(op)
-            elif op.mod:
-                self.type['mod'].append(op)
-
+            self.funcs[op.func].append(op)
             self.size += op.size
+
+        def printOps(self):
+            for func in self.funcs:
+                for op in self.funcs[func]:
+                    print op
 
 
 class Organism:
     """Represents organism populations"""
 
-    def __init__(self, name, ops, res, count=100, cVol=6.5*10**-16):
+    def __init__(self, name, genome, resources, count=100, cVol=6.5*10**-16):
         self.name = name
         self.count = count
         self.cVol = cVol
-        self.ops = ops
-        self.res = res
-        self.gSize = sum([x.size for x in ops])
+        self.genes = genome
+        self.res = resources
 
     def __str__(self):
         return self.name
@@ -235,16 +226,14 @@ class Organism:
     def __repr__(self):
         return self.name
 
-    def print_res(self):
+    def printRes(self):
         for key in self.res:
             print key + ":\t" + str(self.res[key]['current'])
 
-    def print_channels(self):
+    def printChannels(self):
         print "Res\tOpen?\t[Res]"
-        for op in self.ops:
-            if op.trans:
-                print op.trans + "\t" + str(op.on) + "\t" + str(self.res[op.trans]['current'])
-
+        for op in self.genes.funcs['pas']:
+            print op.eff + "\t" + str(op.on) + "\t" + str(self.res[op.eff]['current'])
 
     # Returns the current total volume of the population.
     def vol(self):
@@ -257,9 +246,9 @@ class Organism:
     # Takes a resource string (like 'H+') and returns True if it can currently
     # undergo passive transport into or out of the organism.
     def canPass(self, r):
-        for op in self.ops:
+        for op in self.genes.funcs['pas']:
             # Only return True if it can tranport r.
-            if op.canPassTrans(r):
+            if op.eff == r:
                 return True
 
         # Return False if all operons are checked and none fit the bill.
@@ -267,14 +256,14 @@ class Organism:
 
     # Takes a resource string and closes all passive channels for the resource.
     def close(self, r):
-        for op in self.ops:
-            if (op.trans == r) and (not op.atpReq):
+        for op in self.genes.funcs['pas']:
+            if op.eff == r:
                 op.turnOff()
 
     # Opens all passive channels for the resource.
     def open(self, r):
-        for op in self.ops:
-            if (op.trans == r) and (not op.atpReq):
+        for op in self.genes.funcs['pas']:
+            if op.eff == r:
                 op.turnOn()
 
     # Returns True if that resource concentration is not lethal to the organism.
@@ -285,42 +274,39 @@ class Organism:
     def isIdeal(self, r, conc):
         return self.res[r]['minGrow'] <= conc <= self.res[r]['maxGrow']
 
-    # Takes an environmental resource dictionary and closes/opens channels
-    # according concentrations and cellular needs.
+    # Takes an environmental resource dictionary and closes/opens passive
+    # channels according concentrations and cellular needs.
     def setChannels(self, envRes):
-        for op in self.ops:
-            # Checks that the operon is for a passive transporter.
-            if op.trans and not op.atpReq:
-                r = op.trans                     # Shorthand for the resource.
-                current = self.res[r]['current'] # Shorthand for the current internal conc of r.
+        for op in self.genes.funcs['pas']:
+            r = op.eff                       # Shorthand for the resource.
+            current = self.res[r]['current'] # Shorthand for the current internal conc of r.
 
-                # Check if the cell is dying due to the resource.
-                if not self.isLivable(r, current):
-                    # Open the channel if the environment is better, otherwise close it.
-                    if self.isLivable(r, envRes[r]):
-                        self.open(r)
-                    else:
-                        self.close(r)
-
-                # Also check if the cell isn't dying OR growing.
-                elif not self.isIdeal(r, current):
-                    # Again, open if the env is better.
-                    if self.isIdeal(r, envRes[r]):
-                        self.open(r)
-                    else:
-                        self.close(r)
-
-                # If intracellular levels are ideal, then close the channels.
+            # Check if the cell is dying due to the resource.
+            if not self.isLivable(r, current):
+                # Open the channel if the environment is better, otherwise close it.
+                if self.isLivable(r, envRes[r]):
+                    self.open(r)
                 else:
                     self.close(r)
 
+            # Also check if the cell isn't growing.
+            elif not self.isIdeal(r, current):
+                # Again, open if the environment is better.
+                if self.isIdeal(r, envRes[r]):
+                    self.open(r)
+                else:
+                    self.close(r)
+
+            # If intracellular levels are ideal, then close the channels.
+            else:
+                self.close(r)
+
     # Returns a dictionary of the resources available for pooling (i.e. with
-    # open channels), with the value being a tuple of the moles and volume.
+    # open passive channels), with the value being a tuple of the moles and volume.
     def resAvailable(self):
         resToPool = dict(zip(RESLIST, [(0,0) for x in RESLIST]))
-        for op in self.ops:
-            if op.canPassTrans():
-                resToPool[op.trans] = (self.res[op.trans]['current'] * self.vol(), self.vol())
+        for op in self.genes.funcs['pas']:
+            resToPool[op.eff] = (self.res[op.eff]['current'] * self.vol(), self.vol())
         return resToPool
 
     # Updates the organism's internal resources to the new environment,
@@ -355,7 +341,7 @@ class Environment:
     def __repr__(self):
         return self.name
 
-    def print_res(self):
+    def printRes(self):
         for key in self.res:
             print key + ":\t\t" + str(self.res[key])
 
@@ -420,6 +406,8 @@ operons = [Operon('CO2 Diffusion', 0, 'pas', 'CO2'),
            Operon('K+ channel', 500, 'pas', 'K+'),
            Operon('Cl- channel', 500, 'pas', 'Cl-')]
 
+genome = Genome(operons)
+
 # Default organisms
-eColi = Organism('E. coli', dict(zip(operons, [1 for op in operons])), CELLR)
-cDiff = Organism('C. diff', dict(zip(operons, [1 for op in operons])), CELLR)
+eColi = Organism('E. coli', genome, CELLR)
+cDiff = Organism('C. diff', genome, CELLR)
