@@ -67,7 +67,7 @@ CELLR = {'H+':  {'current': 10**-7.4,
                  'minGrow': 0.0,
                  'maxGrow': 10**-3,
                  'maxLive': 10**-2},
-         'Glc': {'current': 0.0,#8*10**-3,
+         'Glc': {'current': 8*10**-3,
                  'minLive': 0.0,
                  'minGrow': 10**-3,
                  'maxGrow': 10**-2,
@@ -82,7 +82,7 @@ CELLR = {'H+':  {'current': 10**-7.4,
                  'minGrow': 0.0,
                  'maxGrow': 10**-2,
                  'maxLive': 2*10**-2},
-         'AAs': {'current': 1.5*10**-1,
+         'AAs': {'current': .4,#1.5*10**-1,
                  'minLive': 10**-2,
                  'minGrow': 10**-1,
                  'maxGrow': 2*10**-1,
@@ -262,8 +262,8 @@ class Organism:
     # undergo passive transport into or out of the organism.
     def canPass(self, r):
         for op in self.genes.funcs['pas']:
-            # Only return True if it can tranport r.
-            if op.eff == r:
+            # Only return True if it can tranport r and is on.
+            if op.eff == r and op.on:
                 return True
 
         # Return False if all operons are checked and none fit the bill.
@@ -335,7 +335,8 @@ class Organism:
     def resAvailable(self):
         resToPool = dict(zip(RESLIST, [(0,0) for x in RESLIST]))
         for op in self.genes.funcs['pas']:
-            resToPool[op.eff] = (self.res[op.eff]['current'] * self.vol(), self.vol())
+            if op.on:
+                resToPool[op.eff] = (self.res[op.eff]['current'] * self.vol(), self.vol())
         return resToPool
 
     # Updates the organism's internal resources to the new environment,
@@ -351,7 +352,7 @@ class Organism:
             r = op.eff
             molesNeeded = self.molsReq(r)
             if molesNeeded:
-                atpNeeded = molesNeeded * op.atpReq
+                atpNeeded = abs(molesNeeded * op.atpReq)
                 if atpNeeded < self.atp():
                     self.useATP(atpNeeded)
                     self.addRes(r, molesNeeded)
@@ -359,6 +360,8 @@ class Organism:
                 else:
                     atpLeft = self.atp() - (self.res['ATP']['minLive'] * self.vol())
                     molesPossible = atpLeft / op.atpReq
+                    if molesNeeded < 0.0:
+                        molesPossible *= -1
                     self.useATP(atpLeft)
                     self.addRes(r, molesPossible)
                     envRes[r] = envRes[r] - molesPossible
