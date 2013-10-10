@@ -111,16 +111,70 @@ CELLR = {'H+':  {'current': 10**-7.4,
 # Some resources diffuse freely across membranes.
 DIFFUSES = ['CO2', 'O2', 'EtOH', 'Lux', 'Temp']
 
+# There are several basic functions of operons, passive/active transporters,
+# modifiers, and reaction catalysts.
+OPTYPES = ['pas', 'act', 'mod', 'rxn']
+
+
+class Reaction:
+    """Defines a reaction of reactants to products"""
+
+    def __init__(self, reactants, products):
+        # Each one must be a list of tuples.  Each tuple should look like:
+        # (resourceString, moles/reaction)
+        self.reactants = reactants
+        self.products = products
+
+    def __str__(self):
+        rxn = ""
+        for r in self.reactants:
+            rxn += (str(r[1]) + "*" + r[0] + " + ")
+        rxn = rxn[:-2] + "-> "
+        for p in self.products:
+            rxn += (str(p[1]) + "*" + p[0] + " + ")
+        return rxn[:-3]
+
+    def __repr__(self):
+        return str(self)
+
+    def all(self):
+        return self.reactants + self.products
+
+    def species(self):
+        return [r[0] for r in self.reactants] + [p[0] for p in self.products]
+
+    # Given a chemical species, returns a dictionary of the number of moles
+    # needed for all the other species in the reaction.
+    # If the given species is not in the reaction, simply returns the inputs.
+    def getMoles(self, species, moles):
+        if species not in self.species():
+            return {species: moles}
+        else:
+            # Find the tuple containing the species.
+            sTup = [t for t in self.all() if t[0] == species][0]
+            rxnMoles = float(moles)/sTup[1]
+            # Build and return the dictionary
+            return dict([(s, m * rxnMoles) for s, m in self.all()])
+
 
 class Operon:
     """Represents a bacterial operon"""
 
-    def __init__(self, name, size, energyRequired, transports):
+    # Operons can either transport something ('act' or 'pas'),
+    # modify a min/max tolerance ('mod'), or catalyze a reaction ('rxn').
+    # transports must be a resource string.
+    # modifies must be a 3-tuple with a resource string, min/max Live/Grow, and an offset value.
+    # converts must be 
+    def __init__(self, name, size, function, effect, energyRequired=0, rate=None):
         self.name = name
         self.size = size
+        self.func = function
+        self.rate = rate
         self.atpReq = energyRequired
-        self.trans = transports
         self.on = True
+
+        if self.func not in OPTYPES:
+            raise ValueError("Function must be 'pas', 'act', 'mod', or 'rxn'.")
 
     def __str__(self):
         return self.name
@@ -141,6 +195,27 @@ class Operon:
             return (not self.atpReq) and (self.trans == r) and (self.on)
         else:
             return (not self.atpReq) and (self.on)
+
+
+class Genome:
+    """A layer for organisms to easily retrieve information about a collection of operons"""
+
+    def __init__(self, operons):
+        # operons should be a list.  Initializing a genome then compiles info
+        # about operons to save calculations down the road.
+        self.size = 0
+        self.type = {'pas': [], 'act': [], 'con': [], 'mod': []}
+        for op in operons:
+            if op.trans and not op.atpReq:
+                self.type['pas'].append(op)
+            elif op.trans and op.atpReq:
+                self.type['act'].append(op)
+            elif op.con:
+                self.type['rxn'].append(op)
+            elif op.mod:
+                self.type['mod'].append(op)
+
+            self.size += op.size
 
 
 class Organism:
@@ -261,6 +336,8 @@ class Organism:
     # Organisms will try to adjust their internal resources within minGrow and
     # maxGrow for that resource, but are limited by concentrations and genes.
     def exchange(self, envRes):
+        for res in self.res:
+            print res
         return envRes
 
 
@@ -333,15 +410,15 @@ class Ecosystem:
 # Define all the operons.
 # The diffusion and irradiance operons don't actually exist.
 # They simplify the code and act as no-sized, non-ATP-consuming transporters.
-operons = [Operon('CO2 Diffusion', 0, 0, 'CO2'),
-           Operon('O2 Diffusion', 0, 0, 'O2'),
-           Operon('EtOH Diffusion', 0, 0, 'EtOH'),
-           Operon('Irradiation', 0, 0, 'Lux'),
-           Operon('Amino acid transporters', 500, 0, 'AAs'),
-           Operon('Glucose transporter', 500, 0, 'Glc'),
-           Operon('Na+ channel', 500, 0, 'Na+'),
-           Operon('K+ channel', 500, 0, 'K+'),
-           Operon('Cl- channel', 500, 0, 'Cl-')]
+operons = [Operon('CO2 Diffusion', 0, 'pas', 'CO2'),
+           Operon('O2 Diffusion', 0, 'pas', 'O2'),
+           Operon('EtOH Diffusion', 0, 'pas', 'EtOH'),
+           Operon('Irradiation', 0, 'pas', 'Lux'),
+           Operon('Amino acid transporters', 500, 'pas', 'AAs'),
+           Operon('Glucose transporter', 500, 'pas', 'Glc'),
+           Operon('Na+ channel', 500, 'pas', 'Na+'),
+           Operon('K+ channel', 500, 'pas', 'K+'),
+           Operon('Cl- channel', 500, 'pas', 'Cl-')]
 
 # Default organisms
 eColi = Organism('E. coli', dict(zip(operons, [1 for op in operons])), CELLR)
