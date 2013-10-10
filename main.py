@@ -7,7 +7,7 @@ import objects
 
 eColi = objects.eColi
 print 'Before:\nE. coli'
-eColi.printRes()
+eColi.printChannels()
 env = objects.Environment('Lab', 1, objects.ENVR)
 #print '\nEnv'
 #env.printRes()
@@ -15,7 +15,7 @@ comm = objects.Ecosystem([eColi], env)
 comm.equalize()
 eColi.exchange(env.partition(comm)[0])
 print '\nAfter:\nE.coli'
-eColi.printRes()
+eColi.printChannels()
 #print '\nEnv'
 #comm.env.printRes()
 print comm.tracker

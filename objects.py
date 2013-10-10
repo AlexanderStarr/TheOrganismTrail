@@ -82,7 +82,7 @@ CELLR = {'H+':  {'current': 10**-7.4,
                  'minGrow': 0.0,
                  'maxGrow': 10**-2,
                  'maxLive': 2*10**-2},
-         'AAs': {'current': .4,#1.5*10**-1,
+         'AAs': {'current': 1.5*10**-1,
                  'minLive': 10**-2,
                  'minGrow': 10**-1,
                  'maxGrow': 2*10**-1,
@@ -367,6 +367,8 @@ class Organism:
                     envRes[r] = envRes[r] - molesPossible
         return envRes
 
+    # Converts everything
+
 
 class Environment:
     """Represents a microbiological environment"""
@@ -422,13 +424,12 @@ class Ecosystem:
         for org in self.orgs:
             org.setChannels(self.env.res)
             self.tracker[org].append(org.count)
+            org.setRes(self.env.res)
         newRes = [org.resAvailable() for org in self.orgs]
         for r in self.env.res:
             self.env.res[r] = ((sum([o[r][0] for o in newRes]) + 
                                self.env.res[r] * self.env.vol)/
                                (sum([o[r][1] for o in newRes]) + self.env.vol))
-        for org in self.orgs:
-            org.setRes(self.env.res)
         self.env.res['Lux'] = light # Light resets, or can change according to some function
 
 
