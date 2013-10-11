@@ -125,18 +125,18 @@ class Reaction:
     """Defines a reaction of reactants to products"""
 
     def __init__(self, reactants, products):
-        # Each one must be a list of tuples.  Each tuple should look like:
-        # (resourceString, moles/reaction)
+        # Each one must be a dictionary, with resource strings as keys and
+        # the corresponding number of moles as the value.
         self.reactants = reactants
         self.products = products
 
     def __str__(self):
         rxn = ""
         for r in self.reactants:
-            rxn += (str(r[1]) + "*" + r[0] + " + ")
+            rxn += (str(self.reactants[r]) + "*" + r + " + ")
         rxn = rxn[:-2] + "-> "
         for p in self.products:
-            rxn += (str(p[1]) + "*" + p[0] + " + ")
+            rxn += (str(self.products[p]) + "*" + p + " + ")
         return rxn[:-3]
 
     def __repr__(self):
@@ -146,20 +146,27 @@ class Reaction:
         return self.reactants + self.products
 
     def species(self):
-        return [r[0] for r in self.reactants] + [p[0] for p in self.products]
+        D = {}
+        D.update(self.reactants)
+        D.update(self.products)
+        return D
 
-    # Given a chemical species, returns a dictionary of the number of moles
-    # needed for all the other species in the reaction.
-    # If the given species is not in the reaction, simply returns the inputs.
-    def getMoles(self, species, moles):
-        if species not in self.species():
-            return {species: moles}
-        else:
-            # Find the tuple containing the species.
-            sTup = [t for t in self.all() if t[0] == species][0]
-            rxnMoles = float(moles)/sTup[1]
-            # Build and return the dictionary
-            return dict([(s, m * rxnMoles) for s, m in self.all()])
+    # Takes a list of tuples.  Each tuple contains a resource string and the
+    # moles of that resource available/desired.  Finds the limiting reactant/
+    # product, and returns a dictionary specifying the moles used/produced in
+    # the reaction.  Moles consumed get negative values.
+    def getMoles(self, speciesL):
+        concD = {}
+        # Find the limiting reactant/product
+        rxnMoles = float(min([m/self.species()[s] for s, m in speciesL]))
+        # Then for each species, multiply the number of rxnMoles by the moles
+        # produced per reaction and store it in the dictionary.
+        for s in self.reactants:
+            concD[s] = -self.reactants[s] * rxnMoles
+        for s in self.products:
+            concD[s] = self.products[s] * rxnMoles
+        return concD
+
 
 
 class Operon:
@@ -341,13 +348,13 @@ class Organism:
 
     # Updates the organism's internal resources to the new environment,
     # according to which channels are open.
-    def setRes(self, envRes):
+    def diffuseRes(self, envRes):
         for res in envRes:
             if self.canPass(res):
                 self.res[res]['current'] = envRes[res]
 
     # Checks all active transport operons, and if they should be used.
-    def exchange(self, envRes):
+    def exchangeRes(self, envRes):
         for op in self.genes.funcs['act']:
             r = op.eff
             molesNeeded = self.molsReq(r)
@@ -367,7 +374,12 @@ class Organism:
                     envRes[r] = envRes[r] - molesPossible
         return envRes
 
-    # Converts everything
+    # Converts things to place concentrations in the growth range.
+    # Goes through the rxn operons in the order they were added, so
+    # earlier operons may use up some resources, leaving none for later ones.
+    def convertRes(self):
+        for op in self.genes.funcs['rxn']:
+            r = op.eff
 
 
 class Environment:
@@ -424,7 +436,7 @@ class Ecosystem:
         for org in self.orgs:
             org.setChannels(self.env.res)
             self.tracker[org].append(org.count)
-            org.setRes(self.env.res)
+            org.diffuseRes(self.env.res)
         newRes = [org.resAvailable() for org in self.orgs]
         for r in self.env.res:
             self.env.res[r] = ((sum([o[r][0] for o in newRes]) + 
