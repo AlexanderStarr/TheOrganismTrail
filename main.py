@@ -13,7 +13,7 @@ env = objects.Environment('Lab', 1, objects.ENVR)
 #env.printRes()
 comm = objects.Ecosystem([eColi], env)
 comm.equalize()
-eColi.exchange(env.partition(comm)[0])
+eColi.exchangeRes(env.partition(comm)[0])
 print '\nAfter:\nE.coli'
 eColi.printChannels()
 #print '\nEnv'
