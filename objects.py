@@ -8,8 +8,8 @@ ENVR = {'H+'  : 10**-7.4,
         'K+'  : 3.3*10**-3,
         'Na+' : 1.8*10**-1,
         'Cl-' : 1.8*10**-1,
-        'CO2' : 0.0,
-        'O2'  : 0.0,
+        'CO2' : 3.3*10**-2,
+        'O2'  : 3.3*10**-2,
         'Glc' : 3.3*10**-3,
         'Fru' : 0.0,
         'Lac' : 0.0,
@@ -30,86 +30,103 @@ RESLIST = ENVR.keys()
 CELLR = {'H+':  {'current': 10**-7.4,
                  'minLive': 10**-8.0,
                  'minGrow': 10**-7.8,
+                 'ideal'  : 10**-7.4,
                  'maxGrow': 10**-7.2,
                  'maxLive': 10**-7.0},
          'K+':  {'current': 2.1*10**-1,
                  'minLive': 10**-1,
                  'minGrow': 1.5*10**-1,
+                 'ideal'  : 2*10**-1,
                  'maxGrow': 2.5*10**-1,
                  'maxLive': 3*10**-1},
          'Na+': {'current': 5*10**-3,
                  'minLive': 10**-3,
                  'minGrow': 3*10**-3,
+                 'ideal'  : 3.5*10**-3,
                  'maxGrow': 1.4*10**-2,
                  'maxLive': 2*10**-2},
          'Cl-': {'current': 5*10**-3,
                  'minLive': 10**-3,
                  'minGrow': 3*10**-3,
+                 'ideal'  : 3.5*10**-3,
                  'maxGrow': 1.4*10**-2,
                  'maxLive': 2*10**-2},
          'ATP': {'current': 8*10**-3,
                  'minLive': 5*10**-4,
                  'minGrow': 2*10**-3,
+                 'ideal'  : 10**-2,
                  'maxGrow': 10**-2,
                  'maxLive': 2*10**-2},
-         'ADP': {'current': 0.0,
+         'ADP': {'current': 8*10**-3,
                  'minLive': 0.0,
                  'minGrow': 0.0,
+                 'ideal'  : 0.0,
                  'maxGrow': 10**-1,
                  'maxLive': 2*10**-1},
          'CO2': {'current': 0.0,
                  'minLive': 0.0,
                  'minGrow': 0.0,
+                 'ideal'  : 0.0,
                  'maxGrow': 10**-3,
                  'maxLive': 10**-2},
          'O2':  {'current': 0.0,
                  'minLive': 0.0,
                  'minGrow': 0.0,
+                 'ideal'  : 0.0,
                  'maxGrow': 10**-3,
                  'maxLive': 10**-2},
          'Glc': {'current': 8*10**-3,
                  'minLive': 0.0,
                  'minGrow': 10**-3,
+                 'ideal'  : 10**-2,
                  'maxGrow': 10**-2,
                  'maxLive': 2*10**-2},
          'Fru': {'current': 0.0,
                  'minLive': 0.0,
                  'minGrow': 0.0,
+                 'ideal'  : 0.0,
                  'maxGrow': 10**-2,
                  'maxLive': 2*10**-2},
          'Lac': {'current': 0.0,
                  'minLive': 0.0,
                  'minGrow': 0.0,
+                 'ideal'  : 0.0,
                  'maxGrow': 10**-2,
                  'maxLive': 2*10**-2},
          'AAs': {'current': 1.5*10**-1,
                  'minLive': 10**-2,
                  'minGrow': 10**-1,
+                 'ideal'  : 2*10**-1,
                  'maxGrow': 2*10**-1,
                  'maxLive': 3*10**-1},
          'N':   {'current': 0.0,
                  'minLive': 0.0,
                  'minGrow': 0.0,
+                 'ideal'  : 0.0,
                  'maxGrow': 10**-2,
                  'maxLive': 10**-1},
-         'P':   {'current': 0.0,
+         'P':   {'current': 8*10**-3,
                  'minLive': 0.0,
                  'minGrow': 0.0,
+                 'ideal'  : 0.0,
                  'maxGrow': 10**-2,
                  'maxLive': 10**-1},
          'EtOH':{'current': 0.0,
                  'minLive': 0.0,
                  'minGrow': 0.0,
+                 'ideal'  : 0.0,
                  'maxGrow': 1.09,   # These correspond to ~6%...
                  'maxLive': 1.71},  # ...and ~10% ABV
          'Temp':{'current': 310.0,
                  'minLive': 273.0,
                  'minGrow': 281.0,
+                 'ideal'  : 310.0,
                  'maxGrow': 318.0,
                  'maxLive': 344.0},
          'Lux' :{'current': 0.0,
                  'minLive': 0.0,
                  'minGrow': 0.0,
+                 'ideal'  : 0.0,
                  'maxGrow': 10**5,
                  'maxLive': 1.7*10**5}}
 
@@ -174,9 +191,11 @@ class Operon:
 
     # Operons can either transport something ('act' or 'pas'),
     # modify a min/max tolerance ('mod'), or catalyze a reaction ('rxn').
-    # transports must be a resource string.
-    # modifies must be a 3-tuple with a resource string, min/max Live/Grow, and an offset value.
-    # converts must be 
+    # function must be one of the above operon-types, and then effect for each
+    # is different.
+    # For 'pas' or 'act', effect muste be a resource string.
+    # For 'rxn', effect must be a Reaction object.
+    # For 'mod', effect must be a tuple of (resourceStr, min/maxStr, offset).
     def __init__(self, name, size, function, effect, energyRequired=0, rate=None):
         self.name = name
         self.size = size
@@ -211,7 +230,7 @@ class Genome:
         # operons should be a list.  Initializing a genome then compiles info
         # about operons to save calculations down the road.
         self.size = 0
-        self.funcs = {'pas': [], 'act': [], 'con': [], 'mod': []}
+        self.funcs = {'pas': [], 'act': [], 'rxn': [], 'mod': []}
         for op in operons:
             self.funcs[op.func].append(op)
             self.size += op.size
@@ -255,7 +274,7 @@ class Organism:
     def atp(self):
         return self.res['ATP']['current'] * self.vol()
 
-        # Adds the given number of moles (+ or -) to the current pool of resource r.
+    # Adds the given number of moles (+ or -) to the current pool of resource r.
     def addRes(self, r, moles):
         self.res[r]['current'] = (self.res[r]['current'] * self.vol() + moles) / self.vol()
 
@@ -289,26 +308,19 @@ class Organism:
                 op.turnOn()
 
     # Returns True if that resource concentration is not lethal to the organism.
-    def isLivable(self, r, conc):
+    def canLive(self, r, conc):
         return self.res[r]['minLive'] <= conc <= self.res[r]['maxLive']
 
     # Returns True if the resource concentration does not limit growth.
-    def isIdeal(self, r, conc):
+    def canGrow(self, r, conc):
         return self.res[r]['minGrow'] <= conc <= self.res[r]['maxGrow']
 
-    # Finds the number of moles required (positive or negative) to reach growth
-    # range for the resource r.
+    # Finds the number of moles required (positive or negative) to reach the
+    # the ideal concentration for the resource r.
     def molsReq(self, r):
         cur = self.res[r]['current']
-        minG = self.res[r]['minGrow']
-        maxG = self.res[r]['maxGrow']
-        if cur < minG:
-            return (minG - cur) * self.vol()
-        elif cur > maxG:
-            return (maxG - cur) * self.vol()
-        # Need 0 moles if already within range.
-        else:
-            return 0
+        ideal = self.res[r]['ideal']
+        return (ideal - cur) * self.vol()
 
     # Takes an environmental resource dictionary and closes/opens passive
     # channels according concentrations and cellular needs.
@@ -318,17 +330,17 @@ class Organism:
             current = self.res[r]['current'] # Shorthand for the current internal conc of r.
 
             # Check if the cell is dying due to the resource.
-            if not self.isLivable(r, current):
+            if not self.canLive(r, current):
                 # Open the channel if the environment is better, otherwise close it.
-                if self.isLivable(r, envRes[r]):
+                if self.canLive(r, envRes[r]):
                     self.open(r)
                 else:
                     self.close(r)
 
             # Also check if the cell isn't growing.
-            elif not self.isIdeal(r, current):
+            elif not self.canGrow(r, current):
                 # Again, open if the environment is better.
-                if self.isIdeal(r, envRes[r]):
+                if self.canGrow(r, envRes[r]):
                     self.open(r)
                 else:
                     self.close(r)
@@ -354,6 +366,8 @@ class Organism:
                 self.res[res]['current'] = envRes[res]
 
     # Checks all active transport operons, and if they should be used.
+    # Order matters here!  Most important active transport should go first.
+    # Otherwise ATP might be used up obtaining non-vital resources.
     def exchangeRes(self, envRes):
         for op in self.genes.funcs['act']:
             r = op.eff
@@ -378,8 +392,39 @@ class Organism:
     # Goes through the rxn operons in the order they were added, so
     # earlier operons may use up some resources, leaving none for later ones.
     def convertRes(self):
+        # For every reaction, check if it should run and if so, for what values.
         for op in self.genes.funcs['rxn']:
-            r = op.eff
+            # Reactants remove a resource, products create a resource
+            reac = op.eff.reactants.keys()
+            prod = op.eff.products.keys()
+            desired = []
+
+            # Check if we need any more of the products or less of the reactants.
+            for r in prod:
+                need = self.molsReq(r)
+                if need > 0:
+                    desired.append((r, need))
+            for r in reac:
+                need = self.molsReq(r)
+                if need < 0:
+                    desired.append((r, abs(need)))
+                # If the current concentration is already below ideal, then we
+                # only allocate as much as we can.
+                else:
+                    canSpare = (self.res[r]['current'] - self.res[r]['minGrow']) * self.vol()
+                    if canSpare <= 0:
+                        canSpare = 0.0
+                    desired.append((r, canSpare))
+
+            print desired
+            # Perform the reaction given our desired constraints.
+            react = op.eff.getMoles(desired)
+            print react
+
+            # Update the resources used in the reaction.
+            for r in react:
+                self.addRes(r, react[r])
+
 
 
 class Environment:
@@ -442,11 +487,14 @@ class Ecosystem:
             self.env.res[r] = ((sum([o[r][0] for o in newRes]) + 
                                self.env.res[r] * self.env.vol)/
                                (sum([o[r][1] for o in newRes]) + self.env.vol))
+        for org in self.orgs:
+            org.convertRes()
         self.env.res['Lux'] = light # Light resets, or can change according to some function
 
 
 # Define all the reactions
 reactions = [Reaction({'Glc':1, 'O2': 6, 'ADP': 38, 'P': 38}, {'CO2': 6, 'ATP': 38}),
+             Reaction({'Glc':1, 'ADP': 2, 'P':2}, {'EtOH': 2, 'CO2': 2, 'ATP': 2}),
              Reaction({'ATP': 1}, {'ADP': 1, 'P': 1})]
 # Define all the operons.
 # The diffusion and irradiance operons don't actually exist.
@@ -459,7 +507,8 @@ operons = [Operon('CO2 Diffusion', 0, 'pas', 'CO2'),
            Operon('Glucose transporter', 500, 'act', 'Glc', 1),
            Operon('Na+ channel', 500, 'pas', 'Na+'),
            Operon('K+ channel', 500, 'pas', 'K+'),
-           Operon('Cl- channel', 500, 'pas', 'Cl-')]
+           Operon('Cl- channel', 500, 'pas', 'Cl-'),
+           Operon('Aerobic respiration', 1000, 'rxn', reactions[0])]
 
 genome = Genome(operons)
 
