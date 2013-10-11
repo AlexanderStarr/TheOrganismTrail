@@ -157,8 +157,8 @@ class Reaction:
     # the reaction.  Moles consumed get negative values.
     def getMoles(self, speciesL):
         concD = {}
-        # Find the limiting reactant/product
-        rxnMoles = float(min([m/self.species()[s] for s, m in speciesL]))
+        # Find the limiting reactant/product of the ones provided.
+        rxnMoles = min([float(m)/self.species()[s] for s, m in speciesL])
         # Then for each species, multiply the number of rxnMoles by the moles
         # produced per reaction and store it in the dictionary.
         for s in self.reactants:
@@ -445,7 +445,9 @@ class Ecosystem:
         self.env.res['Lux'] = light # Light resets, or can change according to some function
 
 
-
+# Define all the reactions
+reactions = [Reaction({'Glc':1, 'O2': 6, 'ADP': 38, 'P': 38}, {'CO2': 6, 'ATP': 38}),
+             Reaction({'ATP': 1}, {'ADP': 1, 'P': 1})]
 # Define all the operons.
 # The diffusion and irradiance operons don't actually exist.
 # They simplify the code and act as no-sized, non-ATP-consuming transporters.
