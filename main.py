@@ -5,17 +5,14 @@ from pygame.locals import *
 
 import objects
 
+cDiff = objects.cDiff
 eColi = objects.eColi
-print 'Before:\nE. coli'
-eColi.printRes()
 env = objects.Environment('Lab', 1, objects.ENVR)
-print '\nEnv'
-env.printRes()
-comm = objects.Ecosystem([eColi], env)
-comm.equalize()
-eColi.exchangeRes(env.partition(comm)[0])
-print '\nAfter:\nE.coli'
-eColi.printRes()
-print '\nEnv'
-comm.env.printRes()
-print comm.tracker
+eco = objects.Ecosystem([eColi, cDiff], env)
+for i in range(10):
+    #for org in eco.orgs:
+    eco.orgs[0].printSummary()
+    #eco.env.printRes()
+    eco.cycle()
+for org in eco.orgs:
+    org.printRes()

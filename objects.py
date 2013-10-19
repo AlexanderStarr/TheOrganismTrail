@@ -54,7 +54,7 @@ CELLR = {'H+':  {'current': 10**-7.4,
          'ATP': {'current': 8*10**-3,
                  'minLive': 5*10**-4,
                  'minGrow': 2*10**-3,
-                 'ideal'  : 10**-2,
+                 'ideal'  : 9*10**-3,
                  'maxGrow': 10**-2,
                  'maxLive': 2*10**-2},
          'ADP': {'current': 8*10**-3,
@@ -63,18 +63,18 @@ CELLR = {'H+':  {'current': 10**-7.4,
                  'ideal'  : 0.0,
                  'maxGrow': 10**-1,
                  'maxLive': 2*10**-1},
-         'CO2': {'current': 0.0,
+         'CO2': {'current': 3.3*10**-2,
                  'minLive': 0.0,
                  'minGrow': 0.0,
                  'ideal'  : 0.0,
-                 'maxGrow': 10**-3,
-                 'maxLive': 10**-2},
-         'O2':  {'current': 0.0,
+                 'maxGrow': 10**-1,
+                 'maxLive': 10**-1},
+         'O2':  {'current': 3.3*10**-2,
                  'minLive': 0.0,
                  'minGrow': 0.0,
                  'ideal'  : 0.0,
-                 'maxGrow': 10**-3,
-                 'maxLive': 10**-2},
+                 'maxGrow': 10**-1,
+                 'maxLive': 10**-1},
          'Glc': {'current': 8*10**-3,
                  'minLive': 0.0,
                  'minGrow': 10**-3,
@@ -99,7 +99,7 @@ CELLR = {'H+':  {'current': 10**-7.4,
                  'ideal'  : 2*10**-1,
                  'maxGrow': 2*10**-1,
                  'maxLive': 3*10**-1},
-         'N':   {'current': 0.0,
+         'N':   {'current': 8*10**-3,
                  'minLive': 0.0,
                  'minGrow': 0.0,
                  'ideal'  : 0.0,
@@ -135,7 +135,7 @@ DIFFUSES = ['CO2', 'O2', 'EtOH', 'Lux', 'Temp']
 
 # There are several basic functions of operons, passive/active transporters,
 # modifiers, and reaction catalysts.
-OPTYPES = ['pas', 'act', 'mod', 'rxn']
+OPTYPES = ['pas', 'act', 'mod', 'rxn', 'misc']
 
 
 class Reaction:
@@ -185,7 +185,6 @@ class Reaction:
         return concD
 
 
-
 class Operon:
     """Represents a bacterial operon"""
 
@@ -193,14 +192,15 @@ class Operon:
     # modify a min/max tolerance ('mod'), or catalyze a reaction ('rxn').
     # function must be one of the above operon-types, and then effect for each
     # is different.
-    # For 'pas' or 'act', effect muste be a resource string.
+    # For 'pas' or 'act', effect must be a resource string.
     # For 'rxn', effect must be a Reaction object.
     # For 'mod', effect must be a tuple of (resourceStr, min/maxStr, offset).
+    # For 'misc', effect must be a special string.
     def __init__(self, name, size, function, effect, energyRequired=0, rate=None):
         self.name = name
         self.size = size
         if function not in OPTYPES:
-            raise ValueError("Function must be 'pas', 'act', 'mod', or 'rxn'.")
+            raise ValueError("Function must be 'pas', 'act', 'mod', 'rxn' or 'misc'.")
         else:
             self.func = function
         self.eff = effect
@@ -230,15 +230,22 @@ class Genome:
         # operons should be a list.  Initializing a genome then compiles info
         # about operons to save calculations down the road.
         self.size = 0
-        self.funcs = {'pas': [], 'act': [], 'rxn': [], 'mod': []}
+        self.funcs = {'pas': [], 'act': [], 'rxn': [], 'mod': [], 'misc': []}
         for op in operons:
             self.funcs[op.func].append(op)
             self.size += op.size
 
-        def printOps(self):
-            for func in self.funcs:
-                for op in self.funcs[func]:
-                    print op
+        dnaPols = 0
+        for op in self.funcs['misc']:
+            if op.eff == 'DNAPol':
+                dnaPols += 1
+        self.dnaPols = dnaPols
+
+
+    def printOps(self):
+        for func in self.funcs:
+            for op in self.funcs[func]:
+                print op
 
 
 class Organism:
@@ -265,6 +272,19 @@ class Organism:
         print "Res\tOpen?\t[Res]"
         for op in self.genes.funcs['pas']:
             print op.eff + "\t" + str(op.on) + "\t" + str(self.res[op.eff]['current'])
+
+    def printSummary(self):
+        print self.name + ": " + str(self.count)
+        limitedBy = ""
+        dyingFrom = ""
+        for r in self.res:
+            if not self.canGrow(r):
+                limitedBy = limitedBy + str(r) + ": " + str(self.res[r]['current']) + "  "
+                if not self.canLive(r):
+                    dyingFrom = dyingFrom + str(r) + ": " + str(self.res[r]['current']) + "  "
+        print "Limited by: " + limitedBy
+        print "Dying from: " + dyingFrom 
+        print ""
 
     # Returns the current total volume of the population.
     def vol(self):
@@ -308,11 +328,17 @@ class Organism:
                 op.turnOn()
 
     # Returns True if that resource concentration is not lethal to the organism.
-    def canLive(self, r, conc):
+    # If no concentration is given, it checks the current concentration of r.
+    def canLive(self, r, conc=None):
+        if not conc:
+            conc = self.res[r]['current']
         return self.res[r]['minLive'] <= conc <= self.res[r]['maxLive']
 
     # Returns True if the resource concentration does not limit growth.
-    def canGrow(self, r, conc):
+    # If no concentration is given, it checks the current concentration of r.
+    def canGrow(self, r, conc=None):
+        if not conc:
+            conc = self.res[r]['current']
         return self.res[r]['minGrow'] <= conc <= self.res[r]['maxGrow']
 
     # Finds the number of moles required (positive or negative) to reach the
@@ -323,7 +349,7 @@ class Organism:
         return (ideal - cur) * self.vol()
 
     # Takes an environmental resource dictionary and closes/opens passive
-    # channels according concentrations and cellular needs.
+    # channels according to concentrations and cellular needs.
     def setChannels(self, envRes):
         for op in self.genes.funcs['pas']:
             r = op.eff                       # Shorthand for the resource.
@@ -416,15 +442,61 @@ class Organism:
                         canSpare = 0.0
                     desired.append((r, canSpare))
 
-            print desired
             # Perform the reaction given our desired constraints.
             react = op.eff.getMoles(desired)
-            print react
 
             # Update the resources used in the reaction.
             for r in react:
                 self.addRes(r, react[r])
 
+    # Returns a factor by which the genome can increase in 1 minute.
+    def calcGrowth(self):
+        # DNA polymerase replicates ~1000bp/sec/enzyme, so the time required
+        # for replication depends on the genome size and number of DNA pols.
+        # It also requires resources, and can be limited by that.
+        # But we won't take that into consideration yet.
+        rateLimit = 60 * 1000.0 * self.genes.dnaPols
+        #resLimit = 6.022*10**23 * min((self.res['N']/4.0, resAvailable['P']/3.0))
+        return (rateLimit / self.genes.size)
+
+    # Handles the division of the organisms.  Division rate is based upon the
+    # genome size and (eventually) available resources.
+    # Returns a dictionary of resources released (all zero, unless cells died).
+    def divide(self):
+        # First check if cells should multiply or die.
+        canGrow = True
+        canLive = True
+        factor = 0.0
+        for r in self.res:
+            if not self.canLive(r, self.res[r]['current']):
+                factor -= 0.1
+                canLive = False
+            if not self.canGrow(r, self.res[r]['current']):
+                canGrow = False
+        if canGrow:
+            factor = self.calcGrowth()
+            #print factor
+            #molesBP = factor * self.genes.size * self.count * 6.022*10**-23
+            #print molesBP
+            #self.printRes()
+            #print ""
+            #self.addRes('N', -molesBP * 4.0)
+            #self.printRes()
+            #print ""
+            #self.addRes('P', -molesBP * 3.0)
+
+        # Adjust the count based on the growth factor.
+        self.count = self.count * (1.0 + factor)
+
+        # Distribute/release resources based on the growth factor.
+        resReleased = {}
+        for r in self.res:
+            if not canLive:
+                resReleased[r] = self.res[r]['current'] * abs(factor) * self.vol()
+            else:
+                resReleased[r] = 0.0
+            self.res[r]['current'] = self.res[r]['current'] / (1.0 + abs(factor))
+        return resReleased
 
 
 class Environment:
@@ -449,23 +521,33 @@ class Environment:
     # Each dictionary contains the moles of resources available to that organism
     # for the current step.  Organisms essentially "check out" a resource
     # dictionary, actively add/remove resources, then return it to the environment.
+    # community should be a list of organisms.
     def partition(self, community):
         # Find the proportion of each organism by volume
-        volumes = [org.vol() for org in community.orgs]
+        volumes = [org.vol() for org in community]
         total = sum(volumes)
         proportions = [x/total for x in volumes]
 
         # Then build a dictionary for each organism, giving it resources
         # proportional to its fractional volume.
-        resources = [{} for org in proportions]
-        for i in range(len(resources)):
+        resources = []
+        for i in range(len(community)):
+            resources.append({})
             for key in self.res:
                 resources[i][key] = (self.res[key] * self.vol * proportions[i])
         return resources
 
-    # Updates the environmental resources
-    def update(self, resources):
-        return resources
+    # Updates the environmental resources by summing the number of moles
+    # each organism has left for the environment.
+    # resources should be a list of dictionaries, like that created by partition().
+    def update(self, partition):
+        for r in self.res:
+            totalMoles = sum([o[r] for o in partition])
+            self.res[r] = totalMoles / self.vol
+
+    def addRes(self, r, moles):
+        if r in self.res:
+            self.res[r] = (self.res[r] * self.vol + moles) / self.vol
 
 
 class Ecosystem:
@@ -476,19 +558,49 @@ class Ecosystem:
         self.env = env
         self.tracker = dict(zip(orgs, [[] for org in orgs]))  # To track populations
 
-    def equalize(self):
-        light = self.env.res['Lux']
+    def printPops(self):
         for org in self.orgs:
-            org.setChannels(self.env.res)
+            print str(org) + ": " + str(org.count)
+
+    def cycle(self):
+        # Set the amount of light.
+        light = self.env.res['Lux']
+        diffusedRes = []
+
+        # Every organism will set channels, add its count to the tracker,
+        # and tell the amount of resources available for diffusion.
+        for org in self.orgs:
             self.tracker[org].append(org.count)
-            org.diffuseRes(self.env.res)
-        newRes = [org.resAvailable() for org in self.orgs]
+            org.setChannels(self.env.res)
+            diffusedRes.append(org.resAvailable())
+
+        # Then the new environmental concentration will be found.
         for r in self.env.res:
-            self.env.res[r] = ((sum([o[r][0] for o in newRes]) + 
+            # New conc = (moles from cells + moles from env) / total volume
+            self.env.res[r] = ((sum([o[r][0] for o in diffusedRes]) + 
                                self.env.res[r] * self.env.vol)/
-                               (sum([o[r][1] for o in newRes]) + self.env.vol))
+                               (sum([o[r][1] for o in diffusedRes]) + self.env.vol))
+
+        # Then the resources will diffuse into/out of cells
+        for org in self.orgs:
+            org.diffuseRes(self.env.res)
+
+        # After diffusion, the environmental resources will be partitioned
+        # and each cell can actively transport its share.  Then the environment
+        # must be updated.
+        partition = self.env.partition(self.orgs)
+        for i in range(len(self.orgs)):
+            partition[i] = self.orgs[i].exchangeRes(partition[i])
+        self.env.update(partition)
+
+        # And finally each organism performs internal processes and grows/dies.
         for org in self.orgs:
             org.convertRes()
+            resReleased = org.divide()
+            for r, m in resReleased.items():
+                self.env.addRes(r, m)
+        
+        org.convertRes()
         self.env.res['Lux'] = light # Light resets, or can change according to some function
 
 
@@ -496,22 +608,26 @@ class Ecosystem:
 reactions = [Reaction({'Glc':1, 'O2': 6, 'ADP': 38, 'P': 38}, {'CO2': 6, 'ATP': 38}),
              Reaction({'Glc':1, 'ADP': 2, 'P':2}, {'EtOH': 2, 'CO2': 2, 'ATP': 2}),
              Reaction({'ATP': 1}, {'ADP': 1, 'P': 1})]
+
 # Define all the operons.
 # The diffusion and irradiance operons don't actually exist.
 # They simplify the code and act as no-sized, non-ATP-consuming transporters.
-operons = [Operon('CO2 Diffusion', 0, 'pas', 'CO2'),
+operons = [Operon('CO2 Diffusion', 1000000, 'pas', 'CO2'),
            Operon('O2 Diffusion', 0, 'pas', 'O2'),
+           Operon('Temp Diffusion', 0, 'pas', 'Temp'),
            Operon('EtOH Diffusion', 0, 'pas', 'EtOH'),
            Operon('Irradiation', 0, 'pas', 'Lux'),
            Operon('Amino acid transporters', 500, 'pas', 'AAs'),
            Operon('Glucose transporter', 500, 'act', 'Glc', 1),
            Operon('Na+ channel', 500, 'pas', 'Na+'),
            Operon('K+ channel', 500, 'pas', 'K+'),
+           Operon('K+ transporter', 500, 'act', 'K+', 1),
            Operon('Cl- channel', 500, 'pas', 'Cl-'),
-           Operon('Aerobic respiration', 1000, 'rxn', reactions[0])]
+           Operon('Aerobic respiration', 1000, 'rxn', reactions[0]),
+           Operon('DNA Polymerase', 1000, 'misc', 'DNAPol')]
 
 genome = Genome(operons)
 
 # Default organisms
 eColi = Organism('E. coli', genome, CELLR)
-cDiff = Organism('C. diff', genome, CELLR)
+cDiff = Organism('C. diff', genome, CELLR, 200)
