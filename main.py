@@ -3,16 +3,11 @@ import random
 import sys
 from pygame.locals import *
 
-import objects
+from defs.defaults import *
 
-cDiff = objects.cDiff
-eColi = objects.eColi
-env = objects.Environment('Lab', 1, objects.ENVR)
-eco = objects.Ecosystem([eColi, cDiff], env)
-for i in range(10):
-    #for org in eco.orgs:
-    eco.orgs[0].printSummary()
-    #eco.env.printRes()
+env = Environment('Lab', 1, ENVR)
+eco = Ecosystem([eColi], env)
+for i in range(1440):
     eco.cycle()
-for org in eco.orgs:
-    org.printRes()
+
+print ""

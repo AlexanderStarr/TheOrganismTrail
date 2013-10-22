@@ -1,142 +1,5 @@
 import random
-
-# A starter environmental resources dictionary.
-# All values are mol/L, except Temp and Lux, which are in Kelvin and Lux.
-# Based on standard LB medium and standard growth conditions.
-# http://en.wikipedia.org/wiki/Lysogeny_broth
-ENVR = {'H+'  : 10**-7.4,
-        'K+'  : 3.3*10**-3,
-        'Na+' : 1.8*10**-1,
-        'Cl-' : 1.8*10**-1,
-        'CO2' : 3.3*10**-2,
-        'O2'  : 3.3*10**-2,
-        'Glc' : 3.3*10**-3,
-        'Fru' : 0.0,
-        'Lac' : 0.0,
-        'AAs' : 9.7*10**-2,
-        'N'   : 0.0,
-        'P'   : 0.0,
-        'EtOH': 0.0,
-        'Temp': 310.0,
-        'Lux' : 1000.0}
-
-RESLIST = ENVR.keys()
-
-# A starter internal cellular concentrations dictionary.
-# Based on Escherichia coli.
-# Each resource has a dictionary containing min/max/current values.
-# All values are in mol/L and are based on the following research article:
-# http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2754216/
-CELLR = {'H+':  {'current': 10**-7.4,
-                 'minLive': 10**-8.0,
-                 'minGrow': 10**-7.8,
-                 'ideal'  : 10**-7.4,
-                 'maxGrow': 10**-7.2,
-                 'maxLive': 10**-7.0},
-         'K+':  {'current': 2.1*10**-1,
-                 'minLive': 10**-1,
-                 'minGrow': 1.5*10**-1,
-                 'ideal'  : 2*10**-1,
-                 'maxGrow': 2.5*10**-1,
-                 'maxLive': 3*10**-1},
-         'Na+': {'current': 5*10**-3,
-                 'minLive': 10**-3,
-                 'minGrow': 3*10**-3,
-                 'ideal'  : 3.5*10**-3,
-                 'maxGrow': 1.4*10**-2,
-                 'maxLive': 2*10**-2},
-         'Cl-': {'current': 5*10**-3,
-                 'minLive': 10**-3,
-                 'minGrow': 3*10**-3,
-                 'ideal'  : 3.5*10**-3,
-                 'maxGrow': 1.4*10**-2,
-                 'maxLive': 2*10**-2},
-         'ATP': {'current': 8*10**-3,
-                 'minLive': 5*10**-4,
-                 'minGrow': 2*10**-3,
-                 'ideal'  : 9*10**-3,
-                 'maxGrow': 10**-2,
-                 'maxLive': 2*10**-2},
-         'ADP': {'current': 8*10**-3,
-                 'minLive': 0.0,
-                 'minGrow': 0.0,
-                 'ideal'  : 0.0,
-                 'maxGrow': 10**-1,
-                 'maxLive': 2*10**-1},
-         'CO2': {'current': 3.3*10**-2,
-                 'minLive': 0.0,
-                 'minGrow': 0.0,
-                 'ideal'  : 0.0,
-                 'maxGrow': 10**-1,
-                 'maxLive': 10**-1},
-         'O2':  {'current': 3.3*10**-2,
-                 'minLive': 0.0,
-                 'minGrow': 0.0,
-                 'ideal'  : 0.0,
-                 'maxGrow': 10**-1,
-                 'maxLive': 10**-1},
-         'Glc': {'current': 8*10**-3,
-                 'minLive': 0.0,
-                 'minGrow': 10**-3,
-                 'ideal'  : 10**-2,
-                 'maxGrow': 10**-2,
-                 'maxLive': 2*10**-2},
-         'Fru': {'current': 0.0,
-                 'minLive': 0.0,
-                 'minGrow': 0.0,
-                 'ideal'  : 0.0,
-                 'maxGrow': 10**-2,
-                 'maxLive': 2*10**-2},
-         'Lac': {'current': 0.0,
-                 'minLive': 0.0,
-                 'minGrow': 0.0,
-                 'ideal'  : 0.0,
-                 'maxGrow': 10**-2,
-                 'maxLive': 2*10**-2},
-         'AAs': {'current': 1.5*10**-1,
-                 'minLive': 10**-2,
-                 'minGrow': 10**-1,
-                 'ideal'  : 2*10**-1,
-                 'maxGrow': 2*10**-1,
-                 'maxLive': 3*10**-1},
-         'N':   {'current': 8*10**-3,
-                 'minLive': 0.0,
-                 'minGrow': 0.0,
-                 'ideal'  : 0.0,
-                 'maxGrow': 10**-2,
-                 'maxLive': 10**-1},
-         'P':   {'current': 8*10**-3,
-                 'minLive': 0.0,
-                 'minGrow': 0.0,
-                 'ideal'  : 0.0,
-                 'maxGrow': 10**-2,
-                 'maxLive': 10**-1},
-         'EtOH':{'current': 0.0,
-                 'minLive': 0.0,
-                 'minGrow': 0.0,
-                 'ideal'  : 0.0,
-                 'maxGrow': 1.09,   # These correspond to ~6%...
-                 'maxLive': 1.71},  # ...and ~10% ABV
-         'Temp':{'current': 310.0,
-                 'minLive': 273.0,
-                 'minGrow': 281.0,
-                 'ideal'  : 310.0,
-                 'maxGrow': 318.0,
-                 'maxLive': 344.0},
-         'Lux' :{'current': 0.0,
-                 'minLive': 0.0,
-                 'minGrow': 0.0,
-                 'ideal'  : 0.0,
-                 'maxGrow': 10**5,
-                 'maxLive': 1.7*10**5}}
-
-# Some resources diffuse freely across membranes.
-DIFFUSES = ['CO2', 'O2', 'EtOH', 'Lux', 'Temp']
-
-# There are several basic functions of operons, passive/active transporters,
-# modifiers, and reaction catalysts.
-OPTYPES = ['pas', 'act', 'mod', 'rxn', 'misc']
-
+from constants import DIFFUSES, OPTYPES
 
 class Reaction:
     """Defines a reaction of reactants to products"""
@@ -281,7 +144,7 @@ class Organism:
             if not self.canGrow(r):
                 limitedBy = limitedBy + str(r) + ": " + str(self.res[r]['current']) + "  "
                 if not self.canLive(r):
-                    dyingFrom = dyingFrom + str(r) + ": " + str(self.res[r]['current']) + "  "
+                    dyingFrom = dyingFrom + str(r) + " "
         print "Limited by: " + limitedBy
         print "Dying from: " + dyingFrom 
         print ""
@@ -290,13 +153,21 @@ class Organism:
     def vol(self):
         return self.cVol * self.count
 
-    # Returns the current number of moles of ATP, as this is often needed.
+    # Returns the current number of moles of ATP available, as this is often needed.
     def atp(self):
-        return self.res['ATP']['current'] * self.vol()
+        moles = (self.res['ATP']['current'] - self.res['ATP']['minGrow']) * self.vol()
+        if moles < 0:
+            return 0.0
+        else:
+            return moles
 
     # Adds the given number of moles (+ or -) to the current pool of resource r.
     def addRes(self, r, moles):
-        self.res[r]['current'] = (self.res[r]['current'] * self.vol() + moles) / self.vol()
+        newConc = (self.res[r]['current'] * self.vol() + moles) / self.vol()
+        if newConc < 0.0:
+            self.res[r]['current'] = 0.0
+        else:
+            self.res[r]['current'] = newConc
 
     # Hydrolyzes the given moles of ATP, converting it to ADP.
     def useATP(self, moles):
@@ -330,14 +201,14 @@ class Organism:
     # Returns True if that resource concentration is not lethal to the organism.
     # If no concentration is given, it checks the current concentration of r.
     def canLive(self, r, conc=None):
-        if not conc:
+        if conc == None:
             conc = self.res[r]['current']
         return self.res[r]['minLive'] <= conc <= self.res[r]['maxLive']
 
     # Returns True if the resource concentration does not limit growth.
     # If no concentration is given, it checks the current concentration of r.
     def canGrow(self, r, conc=None):
-        if not conc:
+        if conc == None:
             conc = self.res[r]['current']
         return self.res[r]['minGrow'] <= conc <= self.res[r]['maxGrow']
 
@@ -378,7 +249,7 @@ class Organism:
     # Returns a dictionary of the resources available for pooling (i.e. with
     # open passive channels), with the value being a tuple of the moles and volume.
     def resAvailable(self):
-        resToPool = dict(zip(RESLIST, [(0,0) for x in RESLIST]))
+        resToPool = dict(zip([r for r in self.res], [(0,0) for r in self.res]))
         for op in self.genes.funcs['pas']:
             if op.on:
                 resToPool[op.eff] = (self.res[op.eff]['current'] * self.vol(), self.vol())
@@ -397,21 +268,27 @@ class Organism:
     def exchangeRes(self, envRes):
         for op in self.genes.funcs['act']:
             r = op.eff
-            molesNeeded = self.molsReq(r)
-            if molesNeeded:
-                atpNeeded = abs(molesNeeded * op.atpReq)
-                if atpNeeded < self.atp():
-                    self.useATP(atpNeeded)
-                    self.addRes(r, molesNeeded)
-                    envRes[r] = envRes[r] - molesNeeded
-                else:
-                    atpLeft = self.atp() - (self.res['ATP']['minLive'] * self.vol())
-                    molesPossible = atpLeft / op.atpReq
-                    if molesNeeded < 0.0:
-                        molesPossible *= -1
-                    self.useATP(atpLeft)
-                    self.addRes(r, molesPossible)
-                    envRes[r] = envRes[r] - molesPossible
+            # Only bother moving resources if we are outside growing range.
+            if not self.canGrow(r):
+                # First determine the moles that we need/can get
+                moles = self.molsReq(r)
+                # If moles is positive and greater than the environment,
+                # then we are limited by external availability.
+                if moles > 0 and moles > envRes[r]:
+                    moles = envRes[r]
+
+                # Now determine the ATP to be used and if it is limiting.
+                atp = abs(moles * op.atpReq)
+                # If we don't have enough ATP, then use only as much as we can.
+                if atp > self.atp():
+                    atp = self.atp()
+                    # Keep the sign of moles, but can only export as much as ATP allows.
+                    moles = moles/abs(moles) * atp / op.atpReq
+
+                # Then add/substract the resources and use the ATP.
+                self.addRes(r, moles)
+                self.useATP(atp)
+                envRes[r] = envRes[r] - moles
         return envRes
 
     # Converts things to place concentrations in the growth range.
@@ -430,6 +307,10 @@ class Organism:
                 need = self.molsReq(r)
                 if need > 0:
                     desired.append((r, need))
+                # If we don't need more product, then make sure we don't make too much.
+                else:
+                    canTake = (self.res[r]['maxGrow'] - self.res[r]['current']) * self.vol()
+                    desired.append((r, canTake))
             for r in reac:
                 need = self.molsReq(r)
                 if need < 0:
@@ -596,38 +477,10 @@ class Ecosystem:
         # And finally each organism performs internal processes and grows/dies.
         for org in self.orgs:
             org.convertRes()
+            org.printSummary()
             resReleased = org.divide()
             for r, m in resReleased.items():
                 self.env.addRes(r, m)
         
         org.convertRes()
         self.env.res['Lux'] = light # Light resets, or can change according to some function
-
-
-# Define all the reactions
-reactions = [Reaction({'Glc':1, 'O2': 6, 'ADP': 38, 'P': 38}, {'CO2': 6, 'ATP': 38}),
-             Reaction({'Glc':1, 'ADP': 2, 'P':2}, {'EtOH': 2, 'CO2': 2, 'ATP': 2}),
-             Reaction({'ATP': 1}, {'ADP': 1, 'P': 1})]
-
-# Define all the operons.
-# The diffusion and irradiance operons don't actually exist.
-# They simplify the code and act as no-sized, non-ATP-consuming transporters.
-operons = [Operon('CO2 Diffusion', 1000000, 'pas', 'CO2'),
-           Operon('O2 Diffusion', 0, 'pas', 'O2'),
-           Operon('Temp Diffusion', 0, 'pas', 'Temp'),
-           Operon('EtOH Diffusion', 0, 'pas', 'EtOH'),
-           Operon('Irradiation', 0, 'pas', 'Lux'),
-           Operon('Amino acid transporters', 500, 'pas', 'AAs'),
-           Operon('Glucose transporter', 500, 'act', 'Glc', 1),
-           Operon('Na+ channel', 500, 'pas', 'Na+'),
-           Operon('K+ channel', 500, 'pas', 'K+'),
-           Operon('K+ transporter', 500, 'act', 'K+', 1),
-           Operon('Cl- channel', 500, 'pas', 'Cl-'),
-           Operon('Aerobic respiration', 1000, 'rxn', reactions[0]),
-           Operon('DNA Polymerase', 1000, 'misc', 'DNAPol')]
-
-genome = Genome(operons)
-
-# Default organisms
-eColi = Organism('E. coli', genome, CELLR)
-cDiff = Organism('C. diff', genome, CELLR, 200)
