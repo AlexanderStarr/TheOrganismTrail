@@ -13,6 +13,7 @@ IMG_DIR = os.path.join('data', 'img')
 background = pygame.image.load(os.path.join(IMG_DIR, 'background.png'))
 background = background.convert()
 screen.blit(background, (0,0))
+playerOps = []
 
 '''env = Environment('Lab', 1, ENVR)
 eco = Ecosystem([eColi], env)
@@ -45,7 +46,8 @@ class MenuItem(pygame.font.Font):
         return self.textSurface
 
 class Menu():
-    def __init__(self, items, center=None, fontSize=36, fontSpace=4):
+    def __init__(self, name, items, center=None, fontSize=36, fontSpace=4):
+        self.name = name
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
         self.background = background
@@ -84,10 +86,16 @@ class Menu():
             for item in self.items:
                 textPos = item.get_pos()
                 if eventX > textPos.left and eventX < textPos.right and eventY > textPos.top and eventY < textPos.bottom:
-                    sys.exit()
+                    handleButton(self.name, item.text)
 
-mainMenu = Menu(("Start", "Quit"))
-addGenesMenu = Menu(operons, fontSize=16, fontSpace=2)
+def handleButton(menu, buttonText):
+    if menu == 'Genes':
+        playerOps.append(operons[buttonText])
+    if menu == 'Main':
+        sys.exit()
+
+mainMenu = Menu("Main", ("Start", "Quit"))
+addGenesMenu = Menu("Genes", operons.keys(), fontSize=16, fontSpace=2)
 menu = addGenesMenu
 menu.drawMenu()
 while True:
@@ -101,3 +109,4 @@ while True:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             print event
             menu.handleEvent(event)
+            print playerOps
