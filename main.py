@@ -13,18 +13,30 @@ IMG_DIR = os.path.join('data', 'img')
 background = pygame.image.load(os.path.join(IMG_DIR, 'background.png'))
 background = background.convert()
 screen.blit(background, (0,0))
-playerOps = []
 
-'''env = Environment('Lab', 1, ENVR)
+'''env = environments['Lab']
 eco = Ecosystem([eColi], env)
-for i in range(1440):
+env.printRes()
+for i in range(180):
     eco.cycle()
+eco.orgs[0].printRes()
+env.printRes()
 
-print'''
-
+'''
 class Game():
     def __init__(self):
         self.menu = None
+        self.playerOps = []
+
+    def handleButton(self, menu, button):
+        if menu.name == 'Genes':
+            self.playerOps.append(operons[button.text])
+        if menu.name == 'Main':
+            if button.text == 'Quit':
+                sys.exit()
+            elif button.text == 'Start':
+                menu.deactivate()
+                self.menu = addGenesMenu
 
 class MenuItem(pygame.font.Font):
     def __init__(self, text, position, fontSize=36, antialias=1, color=(255,255,255), background=None):
@@ -86,23 +98,13 @@ class Menu():
             for item in self.items:
                 textPos = item.get_pos()
                 if eventX > textPos.left and eventX < textPos.right and eventY > textPos.top and eventY < textPos.bottom:
-                    handleButton(self, item.text, game)
+                    game.handleButton(self, item)
             
 
 mainMenu = Menu("Main", ("Start", "Quit"))
 addGenesMenu = Menu("Genes", operons.keys(), fontSize=16, fontSpace=2)
 game = Game()
 game.menu = mainMenu
-
-def handleButton(menu, bText, game):
-    if menu.name == 'Genes':
-        playerOps.append(operons[bText])
-    if menu.name == 'Main':
-        if bText == 'Quit':
-            sys.exit()
-        elif bText == 'Start':
-            menu.deactivate()
-            game.menu = addGenesMenu
 
 while True:
     screen.blit(background, (0,0))
@@ -117,4 +119,4 @@ while True:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             print event
             game.menu.handleEvent(event, game)
-            print playerOps
+            print game.playerOps
