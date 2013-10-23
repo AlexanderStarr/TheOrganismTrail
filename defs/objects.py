@@ -263,32 +263,47 @@ class Organism:
                 self.res[res]['current'] = envRes[res]
 
     # Checks all active transport operons, and if they should be used.
+    # Also checks passive transport operons, because they should be able
+    # to open momentarily, then shut before equilibrating.
     # Order matters here!  Most important active transport should go first.
     # Otherwise ATP might be used up obtaining non-vital resources.
-    def exchangeRes(self, envRes):
-        for op in self.genes.funcs['act']:
+    def exchangeRes(self, envRes, envVol):
+        for op in self.genes.funcs['pas'] + self.genes.funcs['act']:
             r = op.eff
             # Only bother moving resources if we are outside growing range.
-            if not self.canGrow(r):
-                # First determine the moles that we need/can get
-                moles = self.molsReq(r)
-                # If moles is positive and greater than the environment,
-                # then we are limited by external availability.
-                if moles > 0 and moles > envRes[r]:
-                    moles = envRes[r]
+            #if not self.canGrow(r):
+                # First determine the moles that we need to reach ideal.
+            moles = self.molsReq(r)
 
-                # Now determine the ATP to be used and if it is limiting.
-                atp = abs(moles * op.atpReq)
-                # If we don't have enough ATP, then use only as much as we can.
-                if atp > self.atp():
-                    atp = self.atp()
-                    # Keep the sign of moles, but can only export as much as ATP allows.
-                    moles = moles/abs(moles) * atp / op.atpReq
+            # If num of moles is positive and greater than the environment,
+            # then we are limited by external availability.
+            if moles > 0 and moles > envRes[r]:
+                moles = envRes[r]
 
-                # Then add/substract the resources and use the ATP.
-                self.addRes(r, moles)
-                self.useATP(atp)
-                envRes[r] = envRes[r] - moles
+            # Now determine the ATP to be used and if it is limiting.
+            atp = abs(moles * op.atpReq)
+
+            # If we don't have enough ATP, then use only as much as we can.
+            if atp > self.atp():
+                atp = self.atp()
+                # Keep the sign of moles, but can only export as much as ATP allows.
+                moles = cmp(moles, 0) * atp / op.atpReq
+
+            # If the operon is passive, it is limited by the concentration gradient.
+            if op.func == 'pas':
+                eqConc = (self.res[r]['current'] * self.vol() + envRes[r] * envVol) / (self.vol() + envVol)
+                # The cells can only gain or lose as many moles as it takes to reach equilibrium.
+                eqMoles = (eqConc - self.res[r]['current']) * self.vol()
+                if eqMoles >= 0 and moles > eqMoles:
+                    moles = eqMoles
+                elif eqMoles < 0 and moles < eqMoles:
+                    moles = eqMoles
+
+            # Then add/substract the resources and use the ATP.
+            #print "Taking " + str(moles) + " moles of " + r
+            self.addRes(r, moles)
+            self.useATP(atp)
+            envRes[r] = envRes[r] - moles
         return envRes
 
     # Converts things to place concentrations in the growth range.
@@ -302,33 +317,43 @@ class Organism:
             prod = op.eff.products.keys()
             desired = []
 
-            # Check if we need any more of the products or less of the reactants.
-            for r in prod:
-                need = self.molsReq(r)
-                if need > 0:
-                    desired.append((r, need))
-                # If we don't need more product, then make sure we don't make too much.
-                else:
-                    canTake = (self.res[r]['maxGrow'] - self.res[r]['current']) * self.vol()
-                    desired.append((r, canTake))
-            for r in reac:
-                need = self.molsReq(r)
-                if need < 0:
-                    desired.append((r, abs(need)))
-                # If the current concentration is already below ideal, then we
-                # only allocate as much as we can.
-                else:
-                    canSpare = (self.res[r]['current'] - self.res[r]['minGrow']) * self.vol()
-                    if canSpare <= 0:
-                        canSpare = 0.0
-                    desired.append((r, canSpare))
+            # Check to see if we need to do the reaction.  Only do it if
+            # any of the involved species are outside growing range.
+            needRxn = False
+            for s in reac + prod:
+                if not self.canGrow(s):
+                    needRxn = True
 
-            # Perform the reaction given our desired constraints.
-            react = op.eff.getMoles(desired)
+            if needRxn:
+                # Check if we need any more of the products or less of the reactants.
+                for r in prod:
+                    need = self.molsReq(r)
+                    if need > 0:
+                        desired.append((r, need))
+                    # If we don't need more product, then make sure we don't make too much.
+                    else:
+                        canTake = (self.res[r]['maxGrow'] - self.res[r]['current']) * self.vol()
+                        desired.append((r, canTake))
+                for r in reac:
+                    need = self.molsReq(r)
+                    if need < 0:
+                        desired.append((r, abs(need)))
+                    # If the current concentration is already below ideal, then we
+                    # only allocate as much as we can.
+                    else:
+                        canSpare = (self.res[r]['current'] - self.res[r]['minGrow']) * self.vol()
+                        if canSpare <= 0:
+                            canSpare = 0.0
+                        desired.append((r, canSpare))
 
-            # Update the resources used in the reaction.
-            for r in react:
-                self.addRes(r, react[r])
+                # Perform the reaction given our desired constraints.
+                react = op.eff.getMoles(desired)
+                #print desired
+                #print react
+
+                # Update the resources used in the reaction.
+                for r in react:
+                    self.addRes(r, react[r])
 
     # Returns a factor by which the genome can increase in 1 minute.
     def calcGrowth(self):
@@ -471,7 +496,7 @@ class Ecosystem:
         # must be updated.
         partition = self.env.partition(self.orgs)
         for i in range(len(self.orgs)):
-            partition[i] = self.orgs[i].exchangeRes(partition[i])
+            partition[i] = self.orgs[i].exchangeRes(partition[i], self.env.vol)
         self.env.update(partition)
 
         # And finally each organism performs internal processes and grows/dies.
