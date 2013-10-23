@@ -24,7 +24,7 @@ print'''
 
 class Game():
     def __init__(self):
-        self.high_score = 0
+        self.menu = None
 
 class MenuItem(pygame.font.Font):
     def __init__(self, text, position, fontSize=36, antialias=1, color=(255,255,255), background=None):
@@ -78,7 +78,7 @@ class Menu():
     def deactivate(self):
         self.active = False
 
-    def handleEvent(self, event):
+    def handleEvent(self, event, game):
         if event.type == MOUSEBUTTONDOWN and self.isActive():
             currentItem = 0
             eventX = event.pos[0]
@@ -86,19 +86,27 @@ class Menu():
             for item in self.items:
                 textPos = item.get_pos()
                 if eventX > textPos.left and eventX < textPos.right and eventY > textPos.top and eventY < textPos.bottom:
-                    handleButton(self.name, item.text)
-
-def handleButton(menu, buttonText):
-    if menu == 'Genes':
-        playerOps.append(operons[buttonText])
-    if menu == 'Main':
-        sys.exit()
+                    handleButton(self, item.text, game)
+            
 
 mainMenu = Menu("Main", ("Start", "Quit"))
 addGenesMenu = Menu("Genes", operons.keys(), fontSize=16, fontSpace=2)
-menu = addGenesMenu
-menu.drawMenu()
+game = Game()
+game.menu = mainMenu
+
+def handleButton(menu, bText, game):
+    if menu.name == 'Genes':
+        playerOps.append(operons[bText])
+    if menu.name == 'Main':
+        if bText == 'Quit':
+            sys.exit()
+        elif bText == 'Start':
+            menu.deactivate()
+            game.menu = addGenesMenu
+
 while True:
+    screen.blit(background, (0,0))
+    game.menu.drawMenu()
     pygame.display.flip()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -108,5 +116,5 @@ while True:
                 sys.exit()
         elif event.type == pygame.MOUSEBUTTONDOWN:
             print event
-            menu.handleEvent(event)
+            game.menu.handleEvent(event, game)
             print playerOps
