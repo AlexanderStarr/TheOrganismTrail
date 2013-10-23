@@ -45,14 +45,11 @@ class MenuItem(pygame.font.Font):
         return self.textSurface
 
 class Menu():
-    def __init__(self, items, center=None, fsize=36, fspace=4):
+    def __init__(self, items, center=None, fontSize=36, fontSpace=4):
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
         self.background = background
         self.active=False
-        
-        fontSize = fsize
-        fontSpace = fspace
         font = pygame.font.Font(None, fontSize)
         menuHeight = (fontSize+fontSpace)*len(items)
         startY = self.background.get_height()/2 - menuHeight/2
@@ -60,7 +57,7 @@ class Menu():
         for item in items:
             centerX = self.background.get_width()/2
             centerY = startY + fontSize + fontSpace
-            newItem = MenuItem(item, (centerX, centerY), color=(0,0,0))
+            newItem = MenuItem(item, (centerX, centerY), color=(0,0,0), fontSize=fontSize)
             self.items.append(newItem)
             startY = startY + fontSize + fontSpace
 
@@ -90,8 +87,8 @@ class Menu():
                     sys.exit()
 
 mainMenu = Menu(("Start", "Quit"))
-addGenesMenu = Menu(operons, fsize=36, fspace=4)
-menu = mainMenu
+addGenesMenu = Menu(operons, fontSize=16, fontSpace=2)
+menu = addGenesMenu
 menu.drawMenu()
 while True:
     pygame.display.flip()
