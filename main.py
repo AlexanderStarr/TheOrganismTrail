@@ -25,19 +25,27 @@ env.printRes()
 '''
 class Game():
     def __init__(self):
-        self.activeMenus = []
+        self.toDraw = []
         self.playerOps = []
+        self.org = None
 
     def handleButton(self, menu, button):
         if menu.name == 'Genes':
             self.playerOps.append(operons[button.text])
-            self.activeMenus[1] = Menu("PGenes", [op.name for op in self.playerOps], center=(background.get_width()/4, None), fontSize=16, fontSpace=2)
+            self.toDraw[1] = Menu("PGenes", [op.name for op in self.playerOps], center=(background.get_width()/4, None), fontSize=16, fontSpace=2)
         elif menu.name == 'Main':
             if button.text == 'Quit':
                 sys.exit()
             elif button.text == 'Start':
                 menu.deactivate()
-                self.activeMenus = [addGenesMenu, playerGenesMenu]
+                self.toDraw = [addGenesMenu, playerGenesMenu, goButtonMenu, addGenesTitle]
+        elif menu.name == 'PGenes':
+            self.playerOps.remove(operons[button.text])
+            self.toDraw[1] = Menu("PGenes", [op.name for op in self.playerOps], center=(background.get_width()/4, None), fontSize=16, fontSpace=2)
+        elif menu.name == 'Go':
+            self.playerOps = hiddenGenes + self.playerOps
+            self.org = Organism('Player Organism', self.playerOps, copy.deepcopy(CELLR))
+            self.toDraw = [playButton]
 
 
 class MenuItem(pygame.font.Font):
@@ -58,6 +66,12 @@ class MenuItem(pygame.font.Font):
         
     def get_surface(self):
         return self.textSurface
+
+    def draw(self, screen):
+        screen.blit(self.get_surface(), self.get_pos())
+
+    def handleEvent(self, event, game):
+        self.text = self.text
 
 class Menu():
     def __init__(self, name, items, center=(None, None), fontSize=36, fontSpace=4):
@@ -80,14 +94,14 @@ class Menu():
         self.items = list()
         for item in items:
             centerY = startY + fontSize + fontSpace
-            newItem = MenuItem(item, (centerX, centerY), color=(0,0,0), fontSize=fontSize)
+            newItem = MenuItem(item, (centerX, centerY), fontSize=fontSize)
             self.items.append(newItem)
             startY = startY + fontSize + fontSpace
 
-    def drawMenu(self, screen):
+    def draw(self, screen):
         self.active = True
         for item in self.items:
-            screen.blit(item.get_surface(), item.get_pos())
+            item.draw(screen)
 
     def isActive(self):
         return self.active
@@ -113,12 +127,14 @@ mainMenu = Menu("Main", ("Start", "Quit"))
 addGenesList = [op.name for op in displayedGenes]
 addGenesMenu = Menu("Genes", addGenesList, center=(background.get_width()*3/4, None), fontSize=16, fontSpace=2)
 playerGenesMenu = Menu("PGenes", [op.name for op in game.playerOps], center=(background.get_width()/4, None), fontSize=16, fontSpace=2)
-game.activeMenus = [mainMenu]
+goButtonMenu = Menu("Go", ('Go!',), center=(background.get_width()/2, background.get_height()*8/10))
+addGenesTitle = MenuItem("Click operons on right to add, click operons on left to remove", (background.get_width()/2, background.get_height()/10))
+game.toDraw = [mainMenu]
 
 while True:
     screen.blit(background, (0,0))
-    for m in game.activeMenus:
-        m.drawMenu(screen)
+    for m in game.toDraw:
+        m.draw(screen)
     pygame.display.flip()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -128,6 +144,6 @@ while True:
                 sys.exit()
         elif event.type == pygame.MOUSEBUTTONDOWN:
             print event
-            for m in game.activeMenus:
-                m.handleEvent(event, game)
-            print game.playerOps
+            for m in game.toDraw:
+                if m.handleEvent:
+                    m.handleEvent(event, game)
