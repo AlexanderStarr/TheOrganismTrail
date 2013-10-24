@@ -12,7 +12,7 @@ ENVR = {'H+'  : 10**-7.4,
         'Fru' : 0.0,
         'Lac' : 0.0,
         'AAs' : 9.7*10**-2,
-        'N'   : 0.0,
+        'N'   : 10**-3,
         'P'   : 10**-3,  # There shouldn't be P in LB, but the cells don't grow w/out it.
         'EtOH': 0.0,
         'Temp': 310.0,
