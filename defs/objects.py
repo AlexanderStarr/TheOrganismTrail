@@ -513,7 +513,7 @@ class Ecosystem:
         # And finally each organism performs internal processes and grows/dies.
         for org in self.orgs:
             org.convertRes()
-            org.printSummary()
+            #org.printSummary()
             resReleased = org.divide()
             for r, m in resReleased.items():
                 self.env.addRes(r, m)

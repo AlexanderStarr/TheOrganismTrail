@@ -10,10 +10,19 @@ FPS = 30
 clock = pygame.time.Clock()
 IMG_DIR = os.path.join('data', 'img')
 
+# Prepare the splash and background images for Pygame.
 splash = pygame.image.load(os.path.join(IMG_DIR, 'splash.png'))
 splash = splash.convert()
 background = pygame.image.load(os.path.join(IMG_DIR, 'background.png'))
 background = background.convert()
+
+# The main code is something of a mess currently.  This file handles all of
+# the game's GUI, menu logic, etc.  All the cellular simulation occurs in
+# the files in the folder 'defs'.
+
+# Essentially, there is a Game class to keep track of where in the game you are.
+# The Menu and MenuItem classes are simply used to display text and
+# filter out mouse clicks to pass along to the Game class for processing.
 
 class Game():
     def __init__(self):
@@ -24,19 +33,32 @@ class Game():
         self.time = 0
         self.play = False
 
+    # If a menu has a button clicked, then it passes that information here.
+    # From here we can redraw stuff, pause simulation, etc.
     def handleButton(self, menu, button):
+        # If the button is in the genes menu, then add the gene to playerOps
+        # and update the player genes menue to be drawn.
         if menu.name == 'Genes':
             self.playerOps.append(operons[button.text])
             self.toDraw[1] = Menu("PGenes", [op.name for op in self.playerOps], center=(background.get_width()/4, None), fontSize=20, fontSpace=1)
+        
+        # If in the main menu, either quit or load the next menu.
         elif menu.name == 'Main':
             if button.text == 'Quit':
                 sys.exit()
             elif button.text == 'Start':
                 menu.deactivate()
                 self.toDraw = [addGenesMenu, playerGenesMenu, goButtonMenu, addGenesTitle]
+        
+        # Clicking on a button in the player genes menu removes the operon
+        # from the list, and updates that list for when it is redrawn.
         elif menu.name == 'PGenes':
             self.playerOps.remove(operons[button.text])
             self.toDraw[1] = Menu("PGenes", [op.name for op in self.playerOps], center=(background.get_width()/4, None), fontSize=20, fontSpace=1)
+        
+        # If the player clicks Go, then we need to create their organism,
+        # initialize an environment and ecosystem, then load the menus for
+        # the growth screen.
         elif menu.name == 'Go':
             self.playerOps = hiddenGenes + self.playerOps
             genome = Genome(self.playerOps)
@@ -44,10 +66,14 @@ class Game():
             env = Environment('Game Environment', 1, ENVR)
             self.eco = Ecosystem([self.org], env)
             self.toDraw = [playButtonMenu, pauseButtonMenu, timeMenu, countMenu, quitButtonMenu]
+        
+        # These should be self explanatory.
         elif menu.name == 'Play':
             self.play = True
+        
         elif menu.name == 'Pause':
             self.play = False
+        
         elif menu.name == 'Quit':
             sys.exit()
 
@@ -125,9 +151,11 @@ class Menu():
                 textPos = item.get_pos()
                 if eventX > textPos.left and eventX < textPos.right and eventY > textPos.top and eventY < textPos.bottom:
                     game.handleButton(self, item)
-            
+
+# Initialize a game.
 game = Game()
 
+# Draw the splash screen and title text.  Then wait 3 seconds and move on.
 screen.blit(splash, (0,0))
 splashMenu = Menu("Splash", ("The Organism Trail",), fontSize=80)
 splashMenu.draw(screen)
@@ -135,6 +163,7 @@ pygame.display.flip()
 pygame.time.wait(3000)
 screen.blit(background, (0,0))
 
+# Define all of the menus and items we will need to use.
 mainMenu = Menu("Main", ("Start", "Quit"))
 addGenesList = [op.name for op in displayedGenes]
 addGenesMenu = Menu("Genes", addGenesList, center=(background.get_width()*3/4, None), fontSize=20, fontSpace=1)
@@ -146,44 +175,72 @@ pauseButtonMenu = Menu("Pause", ('Pause',), center=(background.get_width()*1/4, 
 quitButtonMenu= Menu("Quit", ('Quit',), center=(background.get_width()*3/4, background.get_height()/16))
 timeMenu = Menu('Time', ('Time (minutes):', str(game.time)), center=(background.get_width()*1/4, background.get_height()*8/10))
 countMenu = Menu('Cells', ('Number of Cells:', str(game.org.count)), center=(background.get_width()*3/4, background.get_height()*8/10))
+
+# Queue the main menu to be drawn.
 game.toDraw = [mainMenu]
 
+# This is the main game loop.
 while True:
+    # Limits the FPS of the game.
     clock.tick(FPS)
+
+    # Load a blank background.
     screen.blit(background, (0,0))
+
+    # Draw everything in the game's drawing queue.
     for i in game.toDraw:
         i.draw(screen)
+
+    # Update the display.
     pygame.display.flip()
+
+    # game.play determines whether or not to execute the cellular simulation logic.
     if game.play:
+        # Run an ecosystem cycle, then update the time and count.
         game.eco.cycle()
         game.time = game.time + 1
         game.count = int(game.eco.orgs[0].count)
-        # If it hasn't grown for 5 minutes, then stop
+
+        # If it hasn't grown at all since 10 minutes, then stop.
         if len(game.eco.tracker[game.eco.orgs[0]]) > 10 and game.eco.tracker[game.eco.orgs[0]][-10] == game.eco.tracker[game.eco.orgs[0]][-1]:
             limitedBy = game.eco.orgs[0].limitedBy()
             game.play = False
+
+            # If we know why they stopped growing, then tell the player.
             if limitedBy:
                 gameOverMenu = Menu("GameOver", ("Game Over", "Your organism stopped growing due to:", limitedBy))
             else:
                 gameOverMenu = Menu("GameOver", ('Game Over', "Your organism stopped growing"))
             game.toDraw.append(gameOverMenu)
             pygame.display.flip()
+
+        # Also stop after 3 game hours.
         if game.time >= 180:
             game.play = False
             gameOverMenu = Menu("GameOver", ("Time's Up!", ))
             game.toDraw.append(gameOverMenu)
             pygame.display.flip()
+
+        # Update the drawing queue with the new time and cell count.
         game.toDraw[2] = Menu('Time', ('Time (minutes):', str(game.time)), center=(background.get_width()*1/4, background.get_height()*8/10))
         game.toDraw[3] = Menu('Cells', ('Number of Cells:', str(game.count)), center=(background.get_width()*3/4, background.get_height()*8/10))
+
+        # Limits the rate at which the ecosystem cycles.  Can decrease or remove this to run faster.
         pygame.time.wait(125)
+
+    # Handle all the Pygame events.
     for event in pygame.event.get():
+        # Exit the program if the window is closed or escape is hit.
         if event.type == pygame.QUIT:
             sys.exit()
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 sys.exit()
+
+        # If they click the mouse, then pass the event to every menu
+        # currently being drawn so they can process it if necessary.
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            print event
+            #print event  # Used for debugging.
             for m in game.toDraw:
                 if m.handleEvent:
                     m.handleEvent(event, game)
