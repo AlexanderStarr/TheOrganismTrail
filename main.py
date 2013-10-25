@@ -14,20 +14,14 @@ background = pygame.image.load(os.path.join(IMG_DIR, 'background.png'))
 background = background.convert()
 screen.blit(background, (0,0))
 
-'''env = environments['Lab']
-eco = Ecosystem([eColi], env)
-env.printRes()
-for i in range(180):
-    eco.cycle()
-eco.orgs[0].printRes()
-env.printRes()
-
-'''
 class Game():
     def __init__(self):
         self.toDraw = []
         self.playerOps = []
-        self.org = None
+        self.org = Organism('', {}, {})
+        self.eco = None
+        self.time = 0
+        self.play = False
 
     def handleButton(self, menu, button):
         if menu.name == 'Genes':
@@ -44,8 +38,15 @@ class Game():
             self.toDraw[1] = Menu("PGenes", [op.name for op in self.playerOps], center=(background.get_width()/4, None), fontSize=16, fontSpace=2)
         elif menu.name == 'Go':
             self.playerOps = hiddenGenes + self.playerOps
-            self.org = Organism('Player Organism', self.playerOps, copy.deepcopy(CELLR))
-            self.toDraw = [playButton]
+            genome = Genome(self.playerOps)
+            self.org = Organism('Player Organism', genome, copy.deepcopy(CELLR))
+            env = Environment('Game Environment', 1, ENVR)
+            self.eco = Ecosystem([self.org], env)
+            self.toDraw = [playButtonMenu, pauseButtonMenu, timeMenu, countMenu]
+        elif menu.name == 'Play':
+            self.play = True
+        elif menu.name == 'Pause':
+            self.play = False
 
 
 class MenuItem(pygame.font.Font):
@@ -129,13 +130,23 @@ addGenesMenu = Menu("Genes", addGenesList, center=(background.get_width()*3/4, N
 playerGenesMenu = Menu("PGenes", [op.name for op in game.playerOps], center=(background.get_width()/4, None), fontSize=16, fontSpace=2)
 goButtonMenu = Menu("Go", ('Go!',), center=(background.get_width()/2, background.get_height()*8/10))
 addGenesTitle = MenuItem("Click operons on right to add, click operons on left to remove", (background.get_width()/2, background.get_height()/10))
+playButtonMenu = Menu("Play", ('Play',), center=(background.get_width()*3/4, background.get_height()/16))
+pauseButtonMenu = Menu("Pause", ('Pause',), center=(background.get_width()*1/4, background.get_height()/16))
+timeMenu = Menu('Time', ('Time (minutes):', str(game.time)), center=(background.get_width()*1/4, background.get_height()*8/10))
+countMenu = Menu('Cells', ('Number of Cells:', str(game.org.count)), center=(background.get_width()*3/4, background.get_height()*8/10))
 game.toDraw = [mainMenu]
 
 while True:
     screen.blit(background, (0,0))
-    for m in game.toDraw:
-        m.draw(screen)
+    for i in game.toDraw:
+        i.draw(screen)
     pygame.display.flip()
+    if game.play:
+        game.eco.cycle()
+        game.time = game.time + 1
+        game.count = int(game.eco.orgs[0].count)
+        game.toDraw[2] = Menu('Time', ('Time (minutes):', str(game.time)), center=(background.get_width()*1/4, background.get_height()*8/10))
+        game.toDraw[3] = Menu('Cells', ('Number of Cells:', str(game.count)), center=(background.get_width()*3/4, background.get_height()*8/10))
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             sys.exit()
