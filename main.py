@@ -137,6 +137,7 @@ countMenu = Menu('Cells', ('Number of Cells:', str(game.org.count)), center=(bac
 game.toDraw = [mainMenu]
 
 while True:
+    clock.tick(FPS)
     screen.blit(background, (0,0))
     for i in game.toDraw:
         i.draw(screen)
@@ -147,6 +148,7 @@ while True:
         game.count = int(game.eco.orgs[0].count)
         game.toDraw[2] = Menu('Time', ('Time (minutes):', str(game.time)), center=(background.get_width()*1/4, background.get_height()*8/10))
         game.toDraw[3] = Menu('Cells', ('Number of Cells:', str(game.count)), center=(background.get_width()*3/4, background.get_height()*8/10))
+        pygame.time.wait(333)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             sys.exit()
