@@ -14,11 +14,11 @@ reactions = {'Aerobic respiration': Reaction({'Glc':1, 'O2': 6, 'ADP': 38, 'P': 
 # Define all the operons.
 # The diffusion and irradiance operons don't actually exist.
 # They simplify the code and act as size-less, passive channels.
-operons = {'CO2 Diffusion': Operon('CO2 Diffusion', 0, 'pas', 'CO2'),
-           'O2 Diffusion': Operon('O2 Diffusion', 0, 'pas', 'O2'),
-           'Temp Diffusion': Operon('Temp Diffusion', 0, 'pas', 'Temp'),
-           'EtOH Diffusion': Operon('EtOH Diffusion', 0, 'pas', 'EtOH'),
-           'Irradiation': Operon('Irradiation', 0, 'pas', 'Lux'),
+operons = {'CO2 Diffusion': Operon('CO2 Diffusion', 100, 'pas', 'CO2'),
+           'O2 Diffusion': Operon('O2 Diffusion', 100, 'pas', 'O2'),
+           'Temp Diffusion': Operon('Temp Diffusion', 100, 'pas', 'Temp'),
+           'EtOH Diffusion': Operon('EtOH Diffusion', 100, 'pas', 'EtOH'),
+           'Irradiation': Operon('Irradiation', 100, 'pas', 'Lux'),
            'Glucose Channel': Operon('Glucose Channel', 100000, 'pas', 'Glc'),
            'Glucose Transporter': Operon('Glucose Transporter', 100000, 'act', 'Glc', 1),
            'H+ Transporter': Operon('H+ Transporter', 100000, 'act', 'H+', 0.3),
