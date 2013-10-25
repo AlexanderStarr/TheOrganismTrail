@@ -12,6 +12,14 @@
 
 ## Playing the Game
 
+### The Environment
+
+Right now the only environment available is a simulated laboratory bacterial growth culture.  This means that it is high in glucose, amino acids, sodium chloride, phosphate, nitrogen, and oxygen.  It is low in potassium.  The temperature is 37C, ph is 7.4 and the light is moderate.
+
+### Organism Needs
+
+Your organism has certain intracellular needs that must be met for it to grow.  Briefly, these are: ph of 7.4, high potassium, low sodium and chloride, and ATP.  As your cells divide, the resources that were once enough will have to be distributed among new cells.  This means that in order to grow, your organism must be able to acquire new resources in some way.  Think about how it can do this in different environments. 
+
 ### Adding Operons
 
 Operons are segments of DNA which achieve a specific function and provide regulation of that function.  The operon functions included in this game are:
@@ -19,11 +27,16 @@ Operons are segments of DNA which achieve a specific function and provide regula
 - Passive transport: Also called channels, these allow resources to enter or exit the cell as long as the concentration is lower on the other side.
 - Active transport: Also called transporters, these use ATP to move a resource regardless of the concentration gradient.  If a cell has both passive and active transport for the same resource, then it will try using passive transport first.
 - Reaction catalysis:  Uses enzymes to increase the rate of a chemical reaction, converting a set of reactants to products.  There are a multitude of possible reactions.
+	- Photosynthesis: Is a very large operon, but it allows your organism to create its own glucose.
+	- Aerobic respiration: Also a large operon.  It creates more ATP per glucose molecule than alcohol fermentation, but requires oxygen.
+	- Alcohol fermentation: A much smaller operon than either photosynthesis or aerobic respiration, but it produces less ATP per glucose than aerobic respiration, but does not require oxygen.
 - Attribute modification: Other operons can increase cold or heat tolerance, motility, predation ability, etc.
 
-You will want to add operons according to the environment you have chosen.  Some of them will be needed regardless of the location.  Brush up on your basic biology to determine what will produce a viable organism.
+You will want to add operons according to the environment.  Brush up on your basic biology to determine what will produce a viable organism.  Of particular note, think about the energy production strategy your organism will use.
 
 Adding operons increases the size of your organism's genome, which will decrease the rate at which they can multiply.  There is a way to increase the speed of your bacteria's division, but you must use your critical thinking to figure it out!
+
+**Adding all the operons will not give you an ideal organism!**
 
 To add an operon to your organism, click its name on the right-hand side of the screen.  It will appear on the left side, indicating the addition.  You may add multiple of the same operon, but currently this is only useful for DNA polymerase.  To remove an operon that you have added, you may click its name in the left-hand column.
 
@@ -33,7 +46,7 @@ Once you have added all of the operons that you want, click "Go!"
 
 The growth screen displays the time elapsed, and the number of cells that you have.  Each organism you create starts out with 100 cells, and will divide as long as there are no resources limiting it.
 
-Click "Play" to see how your organism fares!  You can see how well your organism grows.  The game stops if your organism stops growing, or you reach the time limit of 3 hours (180 minutes).  Try to see how many organisms you can get before the time limit is up!
+Click "Play" to see how your organism fares!  You can see how well your organism grows.  The game stops if your organism stops growing, or you reach the time limit of 3 in-game hours (180 minutes).  Try to see how many organisms you can get before the time limit is up!
 
 ## Legal
 
