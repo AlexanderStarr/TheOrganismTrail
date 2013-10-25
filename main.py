@@ -4,15 +4,16 @@ from defs.defaults import *
 
 # Initialize
 pygame.init()
-screen = pygame.display.set_mode((800,600))
 pygame.display.set_caption('The Organism Trail')
+screen = pygame.display.set_mode((800,600))
 FPS = 30
 clock = pygame.time.Clock()
-
 IMG_DIR = os.path.join('data', 'img')
+
+splash = pygame.image.load(os.path.join(IMG_DIR, 'splash.png'))
+splash = splash.convert()
 background = pygame.image.load(os.path.join(IMG_DIR, 'background.png'))
 background = background.convert()
-screen.blit(background, (0,0))
 
 class Game():
     def __init__(self):
@@ -126,6 +127,14 @@ class Menu():
                     game.handleButton(self, item)
             
 game = Game()
+
+screen.blit(splash, (0,0))
+splashMenu = Menu("Splash", ("The Organism Trail",), fontSize=80)
+splashMenu.draw(screen)
+pygame.display.flip()
+pygame.time.wait(3000)
+screen.blit(background, (0,0))
+
 mainMenu = Menu("Main", ("Start", "Quit"))
 addGenesList = [op.name for op in displayedGenes]
 addGenesMenu = Menu("Genes", addGenesList, center=(background.get_width()*3/4, None), fontSize=20, fontSpace=1)
@@ -154,14 +163,16 @@ while True:
             limitedBy = game.eco.orgs[0].limitedBy()
             game.play = False
             if limitedBy:
-                gameOverMenu = Menu("GameOver", ("Game Over", "Your organism stopped growing due to", limitedBy))
+                gameOverMenu = Menu("GameOver", ("Game Over", "Your organism stopped growing due to:", limitedBy))
             else:
                 gameOverMenu = Menu("GameOver", ('Game Over', "Your organism stopped growing"))
             game.toDraw.append(gameOverMenu)
             pygame.display.flip()
-        if game.time > 180:
+        if game.time >= 180:
             game.play = False
             gameOverMenu = Menu("GameOver", ("Time's Up!", ))
+            game.toDraw.append(gameOverMenu)
+            pygame.display.flip()
         game.toDraw[2] = Menu('Time', ('Time (minutes):', str(game.time)), center=(background.get_width()*1/4, background.get_height()*8/10))
         game.toDraw[3] = Menu('Cells', ('Number of Cells:', str(game.count)), center=(background.get_width()*3/4, background.get_height()*8/10))
         pygame.time.wait(125)

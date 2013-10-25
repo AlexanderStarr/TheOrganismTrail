@@ -3,8 +3,8 @@ from constants import *
 from objects import *
 
 # Define all the reactions
-reactions = {'Aerobic respiration': Reaction({'Glc':1, 'O2': 6, 'ADP': 38, 'P': 38}, {'CO2': 6, 'ATP': 38}),
-             'Alcohol fermentation': Reaction({'Glc':1, 'ADP': 2, 'P':2}, {'EtOH': 2, 'CO2': 2, 'ATP': 2}),
+reactions = {'Aerobic Respiration': Reaction({'Glc':1, 'O2': 6, 'ADP': 38, 'P': 38}, {'CO2': 6, 'ATP': 38}),
+             'Alcohol Fermentation': Reaction({'Glc':1, 'ADP': 2, 'P':2}, {'EtOH': 2, 'CO2': 2, 'ATP': 2}),
              'ATP Hydrolysis': Reaction({'ATP': 1}, {'ADP': 1, 'P': 1}),
              'Photosynthesis': Reaction({'CO2': 6, 'Lux': 500}, {'Glc': 1, 'O2': 6}),
              'ADP Production': Reaction({'N': 5, 'P': 2}, {'ADP': 1}),
@@ -30,13 +30,14 @@ operons = {'CO2 Diffusion': Operon('CO2 Diffusion', 100, 'pas', 'CO2'),
            'Na+ Channel': Operon('Na+ Channel', 100000, 'pas', 'Na+'),
            'K+ Channel': Operon('K+ Channel', 100000, 'pas', 'K+'),
            'Cl- Channel': Operon('Cl- Channel', 100000, 'pas', 'Cl-'),
-           'Aerobic Respiration': Operon('Aerobic Respiration', 1000000, 'rxn', reactions['Aerobic respiration']),
+           'Aerobic Respiration': Operon('Aerobic Respiration', 1000000, 'rxn', reactions['Aerobic Respiration']),
            'Photosynthesis': Operon('Photosynthesis', 3000000, 'rxn', reactions['Photosynthesis']),
            'DNA Polymerase': Operon('DNA Polymerase', 100000, 'misc', 'DNAPol'),
            'ADP Production': Operon('ADP Production', 100000, 'rxn', reactions['ADP Production']),
            'AA Degradation': Operon('AA Degradation', 100000, 'rxn', reactions['AA Degradation']),
            'AA Production': Operon('AA Production', 100000, 'rxn', reactions['AA Production']),
-           'P Channel': Operon('P Channel', 100000, 'pas', 'P')}
+           'P Channel': Operon('P Channel', 100000, 'pas', 'P'),
+           'Alcohol Fermentation': Operon('Alcohol Fermentation', 100000, 'rxn', reactions['Alcohol Fermentation'])}
 
 
 genome = Genome(operons.values())
