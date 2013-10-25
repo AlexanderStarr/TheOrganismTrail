@@ -26,7 +26,7 @@ class Game():
     def handleButton(self, menu, button):
         if menu.name == 'Genes':
             self.playerOps.append(operons[button.text])
-            self.toDraw[1] = Menu("PGenes", [op.name for op in self.playerOps], center=(background.get_width()/4, None), fontSize=16, fontSpace=2)
+            self.toDraw[1] = Menu("PGenes", [op.name for op in self.playerOps], center=(background.get_width()/4, None), fontSize=20, fontSpace=1)
         elif menu.name == 'Main':
             if button.text == 'Quit':
                 sys.exit()
@@ -35,18 +35,20 @@ class Game():
                 self.toDraw = [addGenesMenu, playerGenesMenu, goButtonMenu, addGenesTitle]
         elif menu.name == 'PGenes':
             self.playerOps.remove(operons[button.text])
-            self.toDraw[1] = Menu("PGenes", [op.name for op in self.playerOps], center=(background.get_width()/4, None), fontSize=16, fontSpace=2)
+            self.toDraw[1] = Menu("PGenes", [op.name for op in self.playerOps], center=(background.get_width()/4, None), fontSize=20, fontSpace=1)
         elif menu.name == 'Go':
             self.playerOps = hiddenGenes + self.playerOps
             genome = Genome(self.playerOps)
             self.org = Organism('Player Organism', genome, copy.deepcopy(CELLR))
             env = Environment('Game Environment', 1, ENVR)
             self.eco = Ecosystem([self.org], env)
-            self.toDraw = [playButtonMenu, pauseButtonMenu, timeMenu, countMenu]
+            self.toDraw = [playButtonMenu, pauseButtonMenu, timeMenu, countMenu, quitButtonMenu]
         elif menu.name == 'Play':
             self.play = True
         elif menu.name == 'Pause':
             self.play = False
+        elif menu.name == 'Quit':
+            sys.exit()
 
 
 class MenuItem(pygame.font.Font):
@@ -126,12 +128,13 @@ class Menu():
 game = Game()
 mainMenu = Menu("Main", ("Start", "Quit"))
 addGenesList = [op.name for op in displayedGenes]
-addGenesMenu = Menu("Genes", addGenesList, center=(background.get_width()*3/4, None), fontSize=16, fontSpace=2)
-playerGenesMenu = Menu("PGenes", [op.name for op in game.playerOps], center=(background.get_width()/4, None), fontSize=16, fontSpace=2)
+addGenesMenu = Menu("Genes", addGenesList, center=(background.get_width()*3/4, None), fontSize=20, fontSpace=1)
+playerGenesMenu = Menu("PGenes", [op.name for op in game.playerOps], center=(background.get_width()/4, None), fontSize=20, fontSpace=1)
 goButtonMenu = Menu("Go", ('Go!',), center=(background.get_width()/2, background.get_height()*8/10))
 addGenesTitle = MenuItem("Click operons on right to add, click operons on left to remove", (background.get_width()/2, background.get_height()/10))
-playButtonMenu = Menu("Play", ('Play',), center=(background.get_width()*3/4, background.get_height()/16))
+playButtonMenu = Menu("Play", ('Play',), center=(background.get_width()/2, background.get_height()/16))
 pauseButtonMenu = Menu("Pause", ('Pause',), center=(background.get_width()*1/4, background.get_height()/16))
+quitButtonMenu= Menu("Quit", ('Quit',), center=(background.get_width()*3/4, background.get_height()/16))
 timeMenu = Menu('Time', ('Time (minutes):', str(game.time)), center=(background.get_width()*1/4, background.get_height()*8/10))
 countMenu = Menu('Cells', ('Number of Cells:', str(game.org.count)), center=(background.get_width()*3/4, background.get_height()*8/10))
 game.toDraw = [mainMenu]
@@ -146,9 +149,22 @@ while True:
         game.eco.cycle()
         game.time = game.time + 1
         game.count = int(game.eco.orgs[0].count)
+        # If it hasn't grown for 5 minutes, then stop
+        if len(game.eco.tracker[game.eco.orgs[0]]) > 10 and game.eco.tracker[game.eco.orgs[0]][-10] == game.eco.tracker[game.eco.orgs[0]][-1]:
+            limitedBy = game.eco.orgs[0].limitedBy()
+            game.play = False
+            if limitedBy:
+                gameOverMenu = Menu("GameOver", ("Game Over", "Your organism stopped growing due to", limitedBy))
+            else:
+                gameOverMenu = Menu("GameOver", ('Game Over', "Your organism stopped growing"))
+            game.toDraw.append(gameOverMenu)
+            pygame.display.flip()
+        if game.time > 180:
+            game.play = False
+            gameOverMenu = Menu("GameOver", ("Time's Up!", ))
         game.toDraw[2] = Menu('Time', ('Time (minutes):', str(game.time)), center=(background.get_width()*1/4, background.get_height()*8/10))
         game.toDraw[3] = Menu('Cells', ('Number of Cells:', str(game.count)), center=(background.get_width()*3/4, background.get_height()*8/10))
-        pygame.time.wait(333)
+        pygame.time.wait(125)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             sys.exit()

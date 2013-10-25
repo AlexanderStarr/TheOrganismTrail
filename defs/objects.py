@@ -149,6 +149,17 @@ class Organism:
         print "Dying from: " + dyingFrom 
         print ""
 
+    def limitedBy(self):
+        limitedBy = []
+        for r in self.res:
+            if not self.canGrow(r):
+                limitedBy.append(str(r))
+        if limitedBy:
+            lStr = ', '.join(limitedBy)
+            return lStr
+        else:
+            return None
+
     # Returns the current total volume of the population.
     def vol(self):
         return self.cVol * self.count
