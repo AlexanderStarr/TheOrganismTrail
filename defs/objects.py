@@ -38,7 +38,10 @@ class Reaction:
     def getMoles(self, speciesL):
         concD = {}
         # Find the limiting reactant/product of the ones provided.
-        rxnMoles = min([float(m)/self.species()[s] for s, m in speciesL])
+        try:
+            rxnMoles = min([float(m)/self.species()[s] for s, m in speciesL if s in self.species()])
+        except ValueError:
+            rxnMoles = 0.0
         # Then for each species, multiply the number of rxnMoles by the moles
         # produced per reaction and store it in the dictionary.
         for s in self.reactants:
